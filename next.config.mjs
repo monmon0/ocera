@@ -1,14 +1,17 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
+  experimental: {
+    // Enable static exports if needed
+    // output: 'export'
   },
   images: {
-    unoptimized: true,
+    domains: ["placeholder.svg", "localhost"],
+    unoptimized: true, // For static export compatibility
   },
-}
+};
 
-export default nextConfig
+export default withNextIntl(nextConfig);
