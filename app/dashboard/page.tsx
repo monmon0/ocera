@@ -44,15 +44,7 @@ export default function Dashboard() {
   const [newComments, setNewComments] = useState<Record<number, string>>({});
   const [shareStates, setShareStates] = useState<Record<number, boolean>>({});
 
-  // Show loading when component mounts
-  useEffect(() => {
-    setLoading(true, "Loading dashboard...");
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [setLoading]);
+  // Remove automatic loading - only trigger manually when needed
 
   const toggleLike = (postId: number) => {
     setLikeStates((prev) => ({
