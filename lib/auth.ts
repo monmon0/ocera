@@ -29,9 +29,19 @@ export const authOptions: NextAuthOptions = {
       // For example, check if it's a new user and if referral code is provided
       return true;
     },
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+      }
+      if (account) {
+        token.provider = account.provider;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.provider = token.provider as string;
       }
       return session;
     },
