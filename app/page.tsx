@@ -31,12 +31,12 @@ export default function AuthPage() {
   };
 
   const handleGoogleSignUp = () => {
-    setLoading(true, "Signing you in...");
+    showLoading("Creating your account...");
     // Add your Google OAuth logic here
   };
 
   const handleFacebookSignUp = () => {
-    setLoading(true, "Signing you in...");
+    showLoading("Creating your account...");
     // Add your Facebook OAuth logic here
   };
 
