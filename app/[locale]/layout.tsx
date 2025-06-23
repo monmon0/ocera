@@ -7,8 +7,6 @@ import { notFound } from "next/navigation";
 import "../globals.css";
 import Footer from "@/components/footer";
 import { Providers } from "./providers";
-import LoadingScreen from "@/components/loading-screen";
-import { LoadingProvider } from "@/contexts/loading-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +21,7 @@ export const metadata: Metadata = {
 
 const locales = ["en", "vi"];
 
-export default async function RootLayout({
+export default async function LocaleLayout({
   children,
   params: { locale },
 }: {
@@ -40,27 +38,14 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className={inter.className}>
         <NextIntlClientProvider messages={messages}>
-          <LoadingProvider>
-            <Providers>
-              <div className="min-h-screen flex flex-col">
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-              <LoadingScreenWrapper />
-            </Providers>
-          </LoadingProvider>
+          <Providers>
+            <div className="min-h-screen flex flex-col">
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>
   );
-}
-
-// Separate component to use the loading context
-function LoadingScreenWrapper() {
-  return <LoadingScreenClient />;
-}
-
-// Client component to access loading context
-function LoadingScreenClient() {
-  return null; // We'll import this from a client component
 }
