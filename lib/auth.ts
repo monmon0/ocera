@@ -2,13 +2,14 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
-import { SupabaseAdapter } from "@auth/supabase-adapter";
+// import { SupabaseAdapter } from "@auth/supabase-adapter"
 
 export const authOptions: NextAuthOptions = {
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }),
+  // Temporarily disable Supabase adapter for development
+  // adapter: SupabaseAdapter({
+  //   url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  //   secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  // }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
