@@ -1,52 +1,60 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useLoading } from "@/contexts/loading-context";
-import { useTranslations } from "next-intl";
 
 export function usePageLoading() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { setLoading } = useLoading();
-  const t = useTranslations("Loading");
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
-    // Show loading when route changes
-    setLoading(true, t("default"));
+    // Only show loading for navigation between different routes
+    // Don't show for initial page load or same route
+    let timeoutId: NodeJS.Timeout;
 
-    // Hide loading after a short delay to simulate page loading
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 800);
+    const handleRouteChange = () => {
+      showLoading("Loading...");
 
-    return () => clearTimeout(timer);
-  }, [pathname, searchParams, setLoading, t]);
+      // Hide loading after a reasonable time
+      timeoutId = setTimeout(() => {
+        hideLoading();
+      }, 800);
+    };
 
-  return { setLoading };
+    // Only trigger if this is a route change, not initial load
+    if (pathname && pathname !== "/") {
+      handleRouteChange();
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      hideLoading();
+    };
+  }, [pathname, showLoading, hideLoading]);
+
+  return { showLoading, hideLoading };
 }
 
-// Custom hook for specific loading messages
+// Custom hook for specific loading operations
 export function useCustomLoading() {
-  const { setLoading } = useLoading();
-  const t = useTranslations("Loading");
+  const { showLoading, hideLoading } = useLoading();
 
-  const showLoading = (messageKey: string) => {
-    setLoading(true, t(messageKey as any));
-  };
-
-  const hideLoading = () => {
-    setLoading(false);
-  };
+  const showSignInLoading = () => showLoading("Signing you in...");
+  const showProfileLoading = () => showLoading("Loading profile...");
+  const showSavingLoading = () => showLoading("Saving changes...");
+  const showCreatingOCLoading = () => showLoading("Creating your OC...");
+  const showUploadingLoading = () => showLoading("Uploading...");
 
   return {
     showLoading,
     hideLoading,
-    showDefaultLoading: () => showLoading("default"),
-    showSignInLoading: () => showLoading("signingIn"),
-    showProfileLoading: () => showLoading("loadingProfile"),
-    showSavingLoading: () => showLoading("savingChanges"),
-    showCreatingOCLoading: () => showLoading("creatingOC"),
-    showUploadingLoading: () => showLoading("uploading"),
+    showSignInLoading,
+    showProfileLoading,
+    showSavingLoading,
+    showCreatingOCLoading,
+    showUploadingLoading,
   };
 }
