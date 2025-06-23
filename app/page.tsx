@@ -10,22 +10,22 @@ import { useLoading } from "@/contexts/loading-context";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { setLoading } = useLoading();
+  const { showLoading, hideLoading } = useLoading();
 
   const handleGoogleLogin = () => {
-    setLoading(true, "Signing you in...");
+    showLoading("Signing you in...");
     console.log("Google login clicked");
     setTimeout(() => {
-      setLoading(false);
+      hideLoading();
       router.push("/dashboard");
     }, 2000);
   };
 
   const handleFacebookLogin = () => {
-    setLoading(true, "Signing you in...");
+    showLoading("Signing you in...");
     console.log("Facebook login clicked");
     setTimeout(() => {
-      setLoading(false);
+      hideLoading();
       router.push("/dashboard");
     }, 2000);
   };
