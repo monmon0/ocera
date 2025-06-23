@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
         console.log("Referral code:", referralCode);
 
         // Redirect to dashboard or wherever you want after signup
-        return `${baseUrl}/en/dashboard?welcome=true`;
+        return `${baseUrl}/dashboard?welcome=true`;
       }
 
       // Allows relative callback URLs
