@@ -1,40 +1,44 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Label } from "@/components/ui/label"
-import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react"
-import { useRouter } from 'next/navigation'
-import AuthForm from "@/components/auth"
-
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import AuthForm from "@/components/auth";
+import { useLoading } from "@/contexts/loading-context";
 
 export default function AuthPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const { showLoading, hideLoading } = useLoading();
 
   const handleGoogleLogin = () => {
-    // Add your Google OAuth logic here
-    console.log("Google login clicked")
-    router.push('/dashboard') // Redirect to dashboard after login
-  }
+    showLoading("Signing you in...");
+    console.log("Google login clicked");
+    setTimeout(() => {
+      hideLoading();
+      router.push("/dashboard");
+    }, 2000);
+  };
 
   const handleFacebookLogin = () => {
-    // Add your Facebook OAuth logic here
-    console.log("Facebook login clicked")
-    router.push('/dashboard') // Redirect
-  }
+    showLoading("Signing you in...");
+    console.log("Facebook login clicked");
+    setTimeout(() => {
+      hideLoading();
+      router.push("/dashboard");
+    }, 2000);
+  };
 
-   const handleGoogleSignUp = () => {
+  const handleGoogleSignUp = () => {
+    showLoading("Creating your account...");
     // Add your Google OAuth logic here
-    
-  }
+  };
 
   const handleFacebookSignUp = () => {
+    showLoading("Creating your account...");
     // Add your Facebook OAuth logic here
-    
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex flex-col">
@@ -46,7 +50,9 @@ export default function AuthPage() {
               <Sparkles className="h-8 w-8 text-purple-300" />
               <h1 className="text-4xl font-bold text-white">Ocera</h1>
             </div>
-            <p className="text-purple-200 text-lg">The all-in-one social platform for OC Creators</p>
+            <p className="text-purple-200 text-lg">
+              The all-in-one social platform for OC Creators
+            </p>
           </div>
 
           {/* Features Preview */}
@@ -54,17 +60,28 @@ export default function AuthPage() {
             <div className="text-center text-white">
               <Users className="h-12 w-12 text-purple-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Connect & Follow</h3>
-              <p className="text-purple-200">Follow your favourite OC Creator and stay up to date with their content</p>
+              <p className="text-purple-200">
+                Follow your favourite OC Creator and stay up to date with their
+                content
+              </p>
             </div>
             <div className="text-center text-white">
               <ImageIcon className="h-12 w-12 text-purple-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Showcase your OC</h3>
-              <p className="text-purple-200">Share your character reference, inspirarion and their lore with everyone</p>
+              <p className="text-purple-200">
+                Share your character reference, inspiration and their lore with
+                everyone
+              </p>
             </div>
             <div className="text-center text-white">
               <Trophy className="h-12 w-12 text-purple-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Climb the leaderboard</h3>
-              <p className="text-purple-200">Show your passion through creating and engaging with the content on the site</p>
+              <h3 className="text-xl font-semibold mb-2">
+                Climb the leaderboard
+              </h3>
+              <p className="text-purple-200">
+                Show your passion through creating and engaging with the content
+                on the site
+              </p>
             </div>
           </div>
 
@@ -73,5 +90,5 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
