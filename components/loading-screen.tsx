@@ -13,21 +13,31 @@ export default function LoadingScreen({
   message = "Loading...",
 }: LoadingScreenProps) {
   const [dots, setDots] = useState("");
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!isLoading) return;
+    if (isLoading) {
+      setShow(true);
+      const interval = setInterval(() => {
+        setDots((prev) => {
+          if (prev === "...") return "";
+          return prev + ".";
+        });
+      }, 500);
 
-    const interval = setInterval(() => {
-      setDots((prev) => {
-        if (prev === "...") return "";
-        return prev + ".";
-      });
-    }, 500);
+      return () => clearInterval(interval);
+    } else {
+      // Add a small delay before hiding to prevent flashing
+      const timeout = setTimeout(() => {
+        setShow(false);
+        setDots("");
+      }, 100);
 
-    return () => clearInterval(interval);
+      return () => clearTimeout(timeout);
+    }
   }, [isLoading]);
 
-  if (!isLoading) return null;
+  if (!show) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
