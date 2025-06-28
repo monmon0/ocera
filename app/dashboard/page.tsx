@@ -52,7 +52,71 @@ export default function Dashboard() {
   const [newComments, setNewComments] = useState<Record<number, string>>({});
   const [shareStates, setShareStates] = useState<Record<number, boolean>>({});
 
-  // Remove automatic loading - only trigger manually when needed
+  // Process referral code for new users
+  useEffect(() => {
+    const processReferralCode = async () => {
+      if (!session?.user?.email || processingReferral) return;
+
+      // Check if there's a pending referral code from localStorage
+      const pendingReferralCode = localStorage.getItem("pendingReferralCode");
+
+      // Or check URL for referral code (from redirect)
+      const urlReferralCode = searchParams.get("referral");
+
+      const referralCode = pendingReferralCode || urlReferralCode;
+
+      if (referralCode) {
+        setProcessingReferral(true);
+
+        try {
+          const response = await fetch("/api/process-referral", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referralCode }),
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            toast({
+              title: "Welcome to Ocera!",
+              description:
+                "Your account has been created and approved. Welcome to the community!",
+            });
+
+            // Clean up referral code from localStorage
+            localStorage.removeItem("pendingReferralCode");
+
+            // Update URL to remove referral parameter
+            if (urlReferralCode) {
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.delete("referral");
+              router.replace(newUrl.pathname + newUrl.search);
+            }
+          } else {
+            toast({
+              title: "Referral Processing Failed",
+              description:
+                result.error || "Failed to process your referral code.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Error processing referral:", error);
+          toast({
+            title: "Error",
+            description:
+              "An error occurred while processing your referral code.",
+            variant: "destructive",
+          });
+        } finally {
+          setProcessingReferral(false);
+        }
+      }
+    };
+
+    processReferralCode();
+  }, [session, searchParams, processingReferral, router, toast]);
 
   const toggleLike = (postId: number) => {
     setLikeStates((prev) => ({
