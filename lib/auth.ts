@@ -2,14 +2,13 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
-// import { SupabaseAdapter } from "@auth/supabase-adapter"
+import { SupabaseAdapter } from "@auth/supabase-adapter";
 
 export const authOptions: NextAuthOptions = {
-  // Temporarily disable Supabase adapter for development
-  // adapter: SupabaseAdapter({
-  //   url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  //   secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  // }),
+  adapter: SupabaseAdapter({
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -21,7 +20,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "database",
   },
   callbacks: {
     async signIn({ user, account, profile }) {
@@ -29,19 +28,10 @@ export const authOptions: NextAuthOptions = {
       // For example, check if it's a new user and if referral code is provided
       return true;
     },
-    async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id;
-      }
-      if (account) {
-        token.provider = account.provider;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.provider = token.provider as string;
+    async session({ session, user }) {
+      // Send properties to the client, like an access_token and user id from a provider.
+      if (session.user) {
+        session.user.id = user.id;
       }
       return session;
     },

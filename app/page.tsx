@@ -1,44 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth";
-import { useLoading } from "@/contexts/loading-context";
+import { useSupabaseAuth } from "@/contexts/supabase-auth-context";
 
 export default function AuthPage() {
+  const { user, loading } = useSupabaseAuth();
   const router = useRouter();
-  const { showLoading, hideLoading } = useLoading();
 
-  const handleGoogleLogin = () => {
-    showLoading("Signing you in...");
-    console.log("Google login clicked");
-    setTimeout(() => {
-      hideLoading();
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard
+    if (user && !loading) {
       router.push("/dashboard");
-    }, 2000);
-  };
+    }
+  }, [user, loading, router]);
 
-  const handleFacebookLogin = () => {
-    showLoading("Signing you in...");
-    console.log("Facebook login clicked");
-    setTimeout(() => {
-      hideLoading();
-      router.push("/dashboard");
-    }, 2000);
-  };
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <Sparkles className="h-12 w-12 mx-auto mb-4 animate-spin" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleGoogleSignUp = () => {
-    showLoading("Creating your account...");
-    // Add your Google OAuth logic here
-  };
-
-  const handleFacebookSignUp = () => {
-    showLoading("Creating your account...");
-    // Add your Facebook OAuth logic here
-  };
+  // If user is authenticated, don't show auth page
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex flex-col">

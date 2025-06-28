@@ -1,103 +1,84 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { signIn, getSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/components/ui/use-toast'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { useSupabaseAuth } from "@/contexts/supabase-auth-context";
+import { useLoading } from "@/contexts/loading-context";
 
 interface AuthFormProps {
-  callbackUrl?: string
-  className?: string
+  callbackUrl?: string;
+  className?: string;
 }
 
-export default function AuthForm({ callbackUrl = '/', className = '' }: AuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [referralCode, setReferralCode] = useState('')
-  const router = useRouter()
-  const { toast } = useToast()
+export default function AuthForm({
+  callbackUrl = "/dashboard",
+  className = "",
+}: AuthFormProps) {
+  const [referralCode, setReferralCode] = useState("");
+  const router = useRouter();
+  const { toast } = useToast();
+  const { signInWithGoogle, loading } = useSupabaseAuth();
+  const { showLoading, hideLoading } = useLoading();
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook', isSignUp: boolean = false) => {
+  const handleGoogleLogin = async (isSignUp: boolean = false) => {
+    if (isSignUp && !referralCode.trim()) {
+      toast({
+        title: "Referral Code Required",
+        description: "Please enter a referral code to sign up.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      setIsLoading(true)
-      
-      // For signup, we need to pass the referral code
-      const signInOptions: any = {
-        provider,
-        callbackUrl,
+      showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
+
+      // Store referral code in localStorage if it's a signup
+      if (isSignUp && referralCode.trim()) {
+        localStorage.setItem("referralCode", referralCode.trim());
       }
 
-      // If it's a signup and we have a referral code, pass it as a query parameter
-      if (isSignUp && referralCode) {
-        signInOptions.callbackUrl = `${callbackUrl}?referral=${encodeURIComponent(referralCode)}`
-      }
+      await signInWithGoogle();
 
-      const result = await signIn(provider, signInOptions)
-      
-      if (result?.error) {
-        toast({
-          title: 'Authentication Error',
-          description: result.error,
-          variant: 'destructive',
-        })
-      } else if (result?.ok) {
-        // Check if user is authenticated
-        const session = await getSession()
-        if (session) {
-          toast({
-            title: 'Success',
-            description: `Successfully ${isSignUp ? 'signed up' : 'signed in'} with ${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
-          })
-          router.push(callbackUrl)
-        }
-      }
-    } catch (error) {
-      console.error('Social login error:', error)
       toast({
-        title: 'Error',
-        description: 'An error occurred during authentication. Please try again.',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleGoogleLogin = (isSignUp: boolean = false) => {
-    if (isSignUp && !referralCode.trim()) {
+        title: "Success",
+        description: `Successfully ${isSignUp ? "signed up" : "signed in"} with Google`,
+      });
+    } catch (error: any) {
+      console.error("Google login error:", error);
       toast({
-        title: 'Referral Code Required',
-        description: 'Please enter a referral code to sign up.',
-        variant: 'destructive',
-      })
-      return
+        title: "Authentication Error",
+        description:
+          error.message ||
+          "An error occurred during authentication. Please try again.",
+        variant: "destructive",
+      });
+      hideLoading();
     }
-    handleSocialLogin('google', isSignUp)
-  }
-
-  const handleFacebookLogin = (isSignUp: boolean = false) => {
-    if (isSignUp && !referralCode.trim()) {
-      toast({
-        title: 'Referral Code Required',
-        description: 'Please enter a referral code to sign up.',
-        variant: 'destructive',
-      })
-      return
-    }
-    handleSocialLogin('facebook', isSignUp)
-  }
+  };
 
   return (
     <div className={`max-w-md mx-auto ${className}`}>
       <Card className="bg-white/10 backdrop-blur-md border-purple-300/20">
         <CardHeader>
-          <CardTitle className="text-white text-center">Join Ocera Today</CardTitle>
+          <CardTitle className="text-white text-center">
+            Join Ocera Today
+          </CardTitle>
           <CardDescription className="text-purple-200 text-center">
-            Create your account or log in to start sharing your OCs and connecting with others!
+            Create your account or log in to start sharing your OCs and
+            connecting with others!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,13 +97,13 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
                 Sign Up
               </TabsTrigger>
             </TabsList>
-            
+
             <div className="space-y-5"></div>
-            
+
             <TabsContent value="signin" className="space-y-4">
               <Button
                 onClick={() => handleGoogleLogin(false)}
-                disabled={isLoading}
+                disabled={loading}
                 className="w-full bg-white hover:bg-gray-100 text-gray-900 py-5 px-6 flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -143,18 +124,7 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                {isLoading ? 'Signing in...' : 'Continue with Google'}
-              </Button>
-              
-              <Button
-                onClick={() => handleFacebookLogin(false)}
-                disabled={isLoading}
-                className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white py-3 px-6 flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                {isLoading ? 'Signing in...' : 'Continue with Facebook'}
+                {loading ? "Signing in..." : "Continue with Google"}
               </Button>
             </TabsContent>
 
@@ -172,11 +142,11 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
                   required
                 />
               </div>
-              
+
               <div className="space-y-3">
                 <Button
                   onClick={() => handleGoogleLogin(true)}
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full bg-white hover:bg-gray-100 text-gray-900 py-3 px-6 flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -197,18 +167,7 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  {isLoading ? 'Signing up...' : 'Sign up with Google'}
-                </Button>
-                
-                <Button
-                  onClick={() => handleFacebookLogin(true)}
-                  disabled={isLoading}
-                  className="w-full bg-[#1877f2] hover:bg-[#166fe5] text-white py-3 px-6 flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  {isLoading ? 'Signing up...' : 'Sign up with Facebook'}
+                  {loading ? "Signing up..." : "Sign up with Google"}
                 </Button>
               </div>
             </TabsContent>
@@ -216,5 +175,5 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
