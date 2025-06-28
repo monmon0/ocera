@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import Navigation from "@/components/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -29,7 +32,12 @@ import { useLoading } from "@/contexts/loading-context";
 const mockPosts: any[] = [];
 
 export default function Dashboard() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   const { setLoading } = useLoading();
+  const [processingReferral, setProcessingReferral] = useState(false);
 
   const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
   const [likeStates, setLikeStates] = useState<
