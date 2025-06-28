@@ -45,9 +45,28 @@ export default function AuthForm({
     try {
       showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
 
-      // Store referral code in localStorage if it's a signup
+      // For signup, validate referral code first
       if (isSignUp && referralCode.trim()) {
-        localStorage.setItem("referralCode", referralCode.trim());
+        const response = await fetch("/api/validate-referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ referralCode: referralCode.trim() }),
+        });
+
+        const { valid, error } = await response.json();
+
+        if (!valid) {
+          hideLoading();
+          toast({
+            title: "Invalid Referral Code",
+            description: error || "The referral code you entered is not valid.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Store referral code for use after auth
+        localStorage.setItem("pendingReferralCode", referralCode.trim());
       }
 
       await signInWithGoogle();
