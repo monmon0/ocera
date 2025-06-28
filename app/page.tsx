@@ -7,6 +7,7 @@ import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth";
 import { useLoading } from "@/contexts/loading-context";
+import GoogleAuth from "@/components/GoogleAuth";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -85,8 +86,7 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Auth Forms */}
-          <AuthForm />
+          <GoogleAuth />
         </div>
       </div>
     </div>

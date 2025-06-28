@@ -64,6 +64,7 @@ export default function AuthForm({ callbackUrl = '/', className = '' }: AuthForm
       })
     } finally {
       setIsLoading(false)
+      router.push("/dashboard");
     }
   }
 

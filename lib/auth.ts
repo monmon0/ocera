@@ -2,14 +2,14 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
-// import { SupabaseAdapter } from "@auth/supabase-adapter"
+import { SupabaseAdapter } from "@auth/supabase-adapter"
 
 export const authOptions: NextAuthOptions = {
   // Temporarily disable Supabase adapter for development
-  // adapter: SupabaseAdapter({
-  //   url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  //   secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  // }),
+  adapter: SupabaseAdapter({
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  }),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -25,8 +25,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // You can add custom logic here for handling referral codes
-      // For example, check if it's a new user and if referral code is provided
+     
       return true;
     },
     async jwt({ token, user, account }) {
