@@ -1,7 +1,7 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { LoadingProvider, useLoading } from "@/contexts/loading-context";
+import { SupabaseAuthProvider } from "@/contexts/supabase-auth-context";
 import LoadingScreen from "@/components/loading-screen";
 
 function LoadingScreenWrapper() {
@@ -16,11 +16,11 @@ function LoadingScreenWrapper() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <SupabaseAuthProvider>
       <LoadingProvider>
         {children}
         <LoadingScreenWrapper />
       </LoadingProvider>
-    </SessionProvider>
+    </SupabaseAuthProvider>
   );
 }

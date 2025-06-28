@@ -380,7 +380,7 @@ export default function Dashboard() {
                 <Link href="/create">
                   <Button
                     size="sm"
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-4"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Create New OC
