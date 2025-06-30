@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -63,7 +62,7 @@ export default function AuthPage() {
             The ultimate platform for sharing and discovering original characters. 
             Create, showcase, and connect with a community of passionate creators.
           </p>
-          
+
           {/* Feature Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 border border-purple-300/20">
