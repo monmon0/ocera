@@ -98,12 +98,8 @@ export default function Navigation() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage 
-                          src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
-                          alt={user.user_metadata?.full_name || user.email || "User"} 
-                        />
                         <AvatarFallback className="bg-white text-purple-600">
-                          {getUserInitials(user.user_metadata?.full_name, user.email)}
+                          {getUserInitials(user.name, user.email)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -112,7 +108,7 @@ export default function Navigation() {
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">
-                          {user.user_metadata?.full_name || "User"}
+                          {user.name || "User"}
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
                           {user.email}
@@ -154,12 +150,8 @@ export default function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage 
-                        src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
-                        alt={user.user_metadata?.full_name || user.email || "User"} 
-                      />
                       <AvatarFallback className="bg-white text-purple-600">
-                        {getUserInitials(user.user_metadata?.full_name, user.email)}
+                        {getUserInitials(user.name, user.email)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -168,7 +160,7 @@ export default function Navigation() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user.user_metadata?.full_name || "User"}
+                        {user.name || "User"}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
