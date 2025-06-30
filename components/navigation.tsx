@@ -6,24 +6,8 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
-  Home,
-  Search,
-  PlusCircle,
-  Heart,
-  User,
-  Trophy,
   Menu,
-  Users,
 } from "lucide-react";
-
-const navigation = [
-  // { name: "Dashboard", href: "/dashboard", icon: Home },
-  // { name: "Discover", href: "/discover", icon: Search },
-  // { name: "Create", href: "/create", icon: PlusCircle },
-  // { name: "Favourites", href: "/favourites", icon: Heart },
-  // { name: "Following", href: "/following", icon: Users },
-  // { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-];
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,23 +28,6 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={`text-white hover:bg-white/20 ${
-                      isActive ? "bg-white/20" : ""
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {item.name}
-                  </Button>
-                </Link>
-              );
-            })}
             <div className="flex items-center space-x-4 text-white">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dashboard">Dashboard</Link>
