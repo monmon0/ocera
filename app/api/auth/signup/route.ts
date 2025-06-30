@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,13 +52,17 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      // Hash the password before storing
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
       // Create new user
       const { data: newUser, error: userError } = await supabaseAdmin
         .from("users")
         .insert({
           email,
           name,
-          password,
+          password: hashedPassword,
           // is_approved: true, // Auto-approve users with valid referral codes
           // referred_by: referralData.created_by,
         })
