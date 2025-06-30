@@ -40,7 +40,7 @@ const navigation = [
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { user, signOut, loading } = useSupabaseAuth();
+  const { user, signOut, loading, error } = useSupabaseAuth();
 
   const handleSignOut = async () => {
     try {
@@ -150,9 +150,10 @@ export default function Navigation() {
                   className="text-purple hover:bg-white/20"
                   variant="outline" 
                   size="sm"
-                  disabled={loading}
+                  disabled={loading || !!error}
+                  title={error || undefined}
                 >
-                  {loading ? "Loading..." : "Sign In"}
+                  {loading ? "Loading..." : error ? "Config Error" : "Sign In"}
                 </Button>
               )}
             </div>
