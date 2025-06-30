@@ -1,27 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  PlusCircle,
-  TrendingUp,
-  Users,
-  Heart,
-  MessageCircle,
-  Share2,
-  Bookmark,
-  Eye,
-  Star,
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
+import { 
+  TrendingUp, 
+  Users, 
+  Heart, 
+  MessageCircle, 
+  Plus,
   Crown,
-  Zap,
-  Award,
+  Sparkles,
+  Calendar,
+  Activity
 } from "lucide-react";
 import Navigation from "@/components/navigation";
-import Link from "next/link";
 
 // Mock data
 const mockUser = {
@@ -60,6 +57,50 @@ const mockActivity = [
 ];
 
 export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is signed in
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/");
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+    } catch (error) {
+      localStorage.removeItem("user");
+      router.push("/");
+      return;
+    }
+
+    setLoading(false);
+  }, [router]);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("user");
+    router.push("/");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <Sparkles className="h-12 w-12 mx-auto mb-4 animate-spin" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
       <Navigation />
@@ -72,12 +113,15 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold mb-2">Welcome back, {mockUser.name}!</h1>
               <p className="text-purple-100">Ready to share your creativity with the world?</p>
             </div>
-            <Link href="/create">
-              <Button className="bg-white text-purple-600 hover:bg-purple-50">
-                <PlusCircle className="w-4 h-4 mr-2" />
+            <Button asChild>
+              <Link href="/create">
+                <Plus className="w-4 h-4 mr-2" />
                 Create Character
-              </Button>
-            </Link>
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              Sign Out
+            </Button>
           </div>
         </div>
 

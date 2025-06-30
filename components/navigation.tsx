@@ -61,6 +61,27 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/discover">Discover</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/create">Create</Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  window.location.href = "/";
+                }}
+              >
+                Sign Out
+              </Button>
+            </div>
           </div>
 
           {/* Mobile Navigation */}
