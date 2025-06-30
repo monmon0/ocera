@@ -32,24 +32,53 @@ export function SupabaseAuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for stored user session on mount
+  // Check for existing session and validate user
   useEffect(() => {
-    const checkStoredSession = () => {
+    const initializeAuth = async () => {
       try {
+        // Check localStorage first
         const storedUser = localStorage.getItem('ocera_user');
         if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            
+            // Validate user still exists in database
+            const { data: dbUser, error } = await supabase
+              .from('users')
+              .select('id, email, name, created_at, updated_at')
+              .eq('id', parsedUser.id)
+              .single();
+
+            if (!error && dbUser) {
+              const userData: User = {
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.name,
+                created_at: dbUser.created_at,
+                updated_at: dbUser.updated_at,
+              };
+              setUser(userData);
+              localStorage.setItem('ocera_user', JSON.stringify(userData));
+            } else {
+              // User doesn't exist in DB anymore, clear localStorage
+              localStorage.removeItem('ocera_user');
+              setUser(null);
+            }
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            localStorage.removeItem('ocera_user');
+            setUser(null);
+          }
         }
       } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('ocera_user');
+        console.error('Error initializing auth:', error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
-    checkStoredSession();
+    initializeAuth();
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -67,16 +96,32 @@ export function SupabaseAuthProvider({
       const data = await response.json();
 
       if (data.success && data.user) {
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-        };
-        
-        setUser(userData);
-        localStorage.setItem('ocera_user', JSON.stringify(userData));
-        
-        return { success: true };
+        // Fetch full user data from Supabase
+        const { data: dbUser, error } = await supabase
+          .from('users')
+          .select('id, email, name, created_at, updated_at')
+          .eq('id', data.user.id)
+          .single();
+
+        if (!error && dbUser) {
+          const userData: User = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            created_at: dbUser.created_at,
+            updated_at: dbUser.updated_at,
+          };
+          
+          setUser(userData);
+          localStorage.setItem('ocera_user', JSON.stringify(userData));
+          
+          return { success: true };
+        } else {
+          return { 
+            success: false, 
+            error: 'Failed to fetch user data' 
+          };
+        }
       } else {
         return { 
           success: false, 
@@ -110,16 +155,32 @@ export function SupabaseAuthProvider({
       const data = await response.json();
 
       if (data.success && data.user) {
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-        };
-        
-        setUser(userData);
-        localStorage.setItem('ocera_user', JSON.stringify(userData));
-        
-        return { success: true };
+        // Fetch full user data from Supabase
+        const { data: dbUser, error } = await supabase
+          .from('users')
+          .select('id, email, name, created_at, updated_at')
+          .eq('id', data.user.id)
+          .single();
+
+        if (!error && dbUser) {
+          const userData: User = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            created_at: dbUser.created_at,
+            updated_at: dbUser.updated_at,
+          };
+          
+          setUser(userData);
+          localStorage.setItem('ocera_user', JSON.stringify(userData));
+          
+          return { success: true };
+        } else {
+          return { 
+            success: false, 
+            error: 'Failed to fetch user data after signup' 
+          };
+        }
       } else {
         return { 
           success: false, 
@@ -142,7 +203,7 @@ export function SupabaseAuthProvider({
       setUser(null);
       localStorage.removeItem('ocera_user');
       
-      // Clear any session cookies if needed
+      // Clear any session cookies
       document.cookie.split(";").forEach((c) => {
         const eqPos = c.indexOf("=");
         const name = eqPos > -1 ? c.substr(0, eqPos) : c;
@@ -158,12 +219,27 @@ export function SupabaseAuthProvider({
     try {
       if (!user) return;
       
-      // Optionally refresh user data from the server
-      // This could be useful if user data changes elsewhere
-      const storedUser = localStorage.getItem('ocera_user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+      // Refresh user data from Supabase
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('id, email, name, created_at, updated_at')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && dbUser) {
+        const userData: User = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          created_at: dbUser.created_at,
+          updated_at: dbUser.updated_at,
+        };
+        
+        setUser(userData);
+        localStorage.setItem('ocera_user', JSON.stringify(userData));
+      } else {
+        // User no longer exists, sign out
+        await signOut();
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
