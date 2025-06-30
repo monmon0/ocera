@@ -38,21 +38,17 @@ const createDummyClient = () => {
   };
 };
 
-// Initialize clients based on environment variables
+// Initialize clients
 let supabaseClient: any;
 let supabaseAdminClient: any;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase environment variables missing. Using dummy client for development.");
-  
   const dummyClient = createDummyClient();
   supabaseClient = dummyClient;
   supabaseAdminClient = dummyClient;
 } else {
-  // Create the actual Supabase client
   supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-  
-  // Create admin client only if service key is available
   supabaseAdminClient = supabaseServiceKey 
     ? createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
