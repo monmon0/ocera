@@ -79,7 +79,7 @@ export default function Navigation() {
               <Search className="h-4 w-4" />
               Discover
             </Link>
-            <Link
+            {/* <Link
               href="/following"
               className="flex items-center gap-2 text-purple-700 hover:text-purple-900 transition-colors"
             >
@@ -92,7 +92,7 @@ export default function Navigation() {
             >
               <Heart className="h-4 w-4" />
               Favourites
-            </Link>
+            </Link> */}
             <Link
               href="/leaderboard"
               className="flex items-center gap-2 text-purple-700 hover:text-purple-900 transition-colors"

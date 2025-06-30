@@ -27,47 +27,40 @@ export default function AuthForm({
   className = "",
 }: AuthFormProps) {
   const [referralCode, setReferralCode] = useState("");
-  const router = useRouter();
   const { toast } = useToast();
   const { signInWithGoogle, loading } = useSupabaseAuth();
   const { showLoading, hideLoading } = useLoading();
 
+  
+
   const handleGoogleLogin = async (isSignUp: boolean = false) => {
-    if (isSignUp && !referralCode.trim()) {
-      toast({
-        title: "Referral Code Required",
-        description: "Please enter a referral code to sign up.",
-        variant: "destructive",
-      });
-      return;
-    }
+  if (isSignUp && !referralCode.trim()) {
+    toast({
+      title: "Referral Code Required",
+      description: "Please enter a referral code to sign up.",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    try {
-      showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
+  try {
+    showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
 
-      // Store referral code in localStorage if it's a signup
-      if (isSignUp && referralCode.trim()) {
-        localStorage.setItem("referralCode", referralCode.trim());
-      }
+    await signInWithGoogle(isSignUp, referralCode.trim());
+    // Success message will be handled by the auth context after redirect
+    
+  } catch (error: any) {
+    console.error("Google login error:", error);
+    hideLoading();
+    toast({
+      title: "Authentication Error", 
+      description: error.message || "An error occurred during authentication. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+  
 
-      await signInWithGoogle();
-
-      toast({
-        title: "Success",
-        description: `Successfully ${isSignUp ? "signed up" : "signed in"} with Google`,
-      });
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      toast({
-        title: "Authentication Error",
-        description:
-          error.message ||
-          "An error occurred during authentication. Please try again.",
-        variant: "destructive",
-      });
-      hideLoading();
-    }
-  };
 
   return (
     <div className={`max-w-md mx-auto ${className}`}>
@@ -177,3 +170,4 @@ export default function AuthForm({
     </div>
   );
 }
+

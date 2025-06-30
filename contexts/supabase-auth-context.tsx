@@ -46,6 +46,7 @@ export function SupabaseAuthProvider({
   }, []);
 
   const signInWithGoogle = async () => {
+    // check if theres exisitng record, if not dont let them sign in, prompt to create account
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
