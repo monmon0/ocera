@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -27,40 +27,88 @@ export default function AuthForm({
   className = "",
 }: AuthFormProps) {
   const [referralCode, setReferralCode] = useState("");
+  const [activeTab, setActiveTab] = useState("signin");
   const { toast } = useToast();
   const { signInWithGoogle, loading } = useSupabaseAuth();
   const { showLoading, hideLoading } = useLoading();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  
+  // Handle URL parameters for success/error messages
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const success = searchParams.get('success');
+    const message = searchParams.get('message');
+    const switchTo = searchParams.get('switch_to');
+
+    if (error && message) {
+      hideLoading();
+      
+      // Auto-switch tabs based on the error
+      if (switchTo) {
+        setActiveTab(switchTo);
+      }
+      
+      toast({
+        title: "Authentication Error",
+        description: decodeURIComponent(message),
+        variant: "destructive",
+      });
+      
+      // Clear the URL parameters
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('error');
+      newUrl.searchParams.delete('message');
+      newUrl.searchParams.delete('switch_to');
+      router.replace(newUrl.pathname + newUrl.search);
+    }
+
+    if (success && message) {
+      hideLoading();
+      toast({
+        title: "Success",
+        description: decodeURIComponent(message),
+      });
+      
+      // Clear the URL parameters and redirect after showing toast
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('success');
+      newUrl.searchParams.delete('message');
+      router.replace(newUrl.pathname + newUrl.search);
+      
+      // Redirect to dashboard after a brief delay
+      setTimeout(() => {
+        router.push(callbackUrl);
+      }, 1500);
+    }
+  }, [searchParams, toast, hideLoading, router, callbackUrl]);
 
   const handleGoogleLogin = async (isSignUp: boolean = false) => {
-  if (isSignUp && !referralCode.trim()) {
-    toast({
-      title: "Referral Code Required",
-      description: "Please enter a referral code to sign up.",
-      variant: "destructive",
-    });
-    return;
-  }
+    if (isSignUp && !referralCode.trim()) {
+      toast({
+        title: "Referral Code Required",
+        description: "Please enter a referral code to sign up.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  try {
-    showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
+    try {
+      showLoading(isSignUp ? "Creating your account..." : "Signing you in...");
 
-    await signInWithGoogle(isSignUp, referralCode.trim());
-    // Success message will be handled by the auth context after redirect
-    
-  } catch (error: any) {
-    console.error("Google login error:", error);
-    hideLoading();
-    toast({
-      title: "Authentication Error", 
-      description: error.message || "An error occurred during authentication. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
-  
-
+      await signInWithGoogle();
+      // Success/error messages will be handled by URL parameters after redirect
+      
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      hideLoading();
+      toast({
+        title: "Authentication Error", 
+        description: error.message || "An error occurred during authentication. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className={`max-w-md mx-auto ${className}`}>
@@ -75,7 +123,7 @@ export default function AuthForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-purple-800/50">
               <TabsTrigger
                 value="signin"
@@ -94,6 +142,12 @@ export default function AuthForm({
             <div className="space-y-5"></div>
 
             <TabsContent value="signin" className="space-y-4">
+              <div className="mb-4 p-3 bg-blue-900/30 border border-blue-400/30 rounded-lg">
+                <p className="text-sm text-blue-200 text-center">
+                  Only existing users can sign in. New users must sign up with a referral code.
+                </p>
+              </div>
+              
               <Button
                 onClick={() => handleGoogleLogin(false)}
                 disabled={loading}
@@ -122,6 +176,12 @@ export default function AuthForm({
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
+              <div className="mb-4 p-3 bg-purple-900/30 border border-purple-400/30 rounded-lg">
+                <p className="text-sm text-purple-200 text-center">
+                  New to Ocera? You'll need a referral code to create your account.
+                </p>
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="referral" className="text-white">
                   Referral Code *
@@ -139,7 +199,7 @@ export default function AuthForm({
               <div className="space-y-3">
                 <Button
                   onClick={() => handleGoogleLogin(true)}
-                  disabled={loading}
+                  disabled={loading || !referralCode.trim()}
                   className="w-full bg-white hover:bg-gray-100 text-gray-900 py-3 px-6 flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -162,6 +222,11 @@ export default function AuthForm({
                   </svg>
                   {loading ? "Signing up..." : "Sign up with Google"}
                 </Button>
+                {!referralCode.trim() && (
+                  <p className="text-sm text-purple-200/80 text-center">
+                    Please enter a referral code to continue
+                  </p>
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -170,4 +235,3 @@ export default function AuthForm({
     </div>
   );
 }
-

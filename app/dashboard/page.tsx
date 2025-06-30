@@ -115,7 +115,7 @@ export default function Dashboard() {
       }
     };
 
-    processReferralCode();
+    // processReferralCode();
   }, [user?.email, searchParams]);
 
   const toggleLike = (postId: number) => {
