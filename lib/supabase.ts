@@ -38,24 +38,30 @@ const createDummyClient = () => {
   };
 };
 
+// Initialize clients based on environment variables
+let supabaseClient: any;
+let supabaseAdminClient: any;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase environment variables missing. Using dummy client for development.");
   
   const dummyClient = createDummyClient();
-  
-  export const supabase = dummyClient as any;
-  export const supabaseAdmin = dummyClient as any;
+  supabaseClient = dummyClient;
+  supabaseAdminClient = dummyClient;
 } else {
   // Create the actual Supabase client
-  export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
   
   // Create admin client only if service key is available
-  export const supabaseAdmin = supabaseServiceKey 
+  supabaseAdminClient = supabaseServiceKey 
     ? createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false
         }
       })
-    : supabase;
+    : supabaseClient;
 }
+
+export const supabase = supabaseClient;
+export const supabaseAdmin = supabaseAdminClient;
