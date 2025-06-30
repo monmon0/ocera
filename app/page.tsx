@@ -1,31 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth";
+import { useSupabaseAuth } from "@/contexts/supabase-auth-context"; // Update with your actual path
 
 export default function AuthPage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useSupabaseAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is already signed in
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        router.push("/dashboard");
-      } catch (error) {
-        localStorage.removeItem("user");
-      }
+    // Redirect to dashboard if user is authenticated
+    if (user && !loading) {
+
+      router.push("/dashboard");
+    } else {
+      console.log("User not authenticated or still loading");
     }
-    setLoading(false);
-  }, [router]);
+  }, [user, loading, router]);
 
   // Show loading state while checking auth
   if (loading) {
@@ -39,7 +34,7 @@ export default function AuthPage() {
     );
   }
 
-  // If user is authenticated, don't show auth page
+  // If user is authenticated, don't show auth page (redirect is handled by useEffect)
   if (user) {
     return null;
   }

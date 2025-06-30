@@ -1,21 +1,25 @@
-
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 type User = {
   id: string;
   email: string;
   name: string;
+  email_verified?: string; // timestamptz
+  image?: string;
   created_at?: string;
   updated_at?: string;
+  password?: string; // Note: you probably don't want to select this in queries
 };
 
 type SupabaseAuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsSignup?: boolean }>;
-  signUp: (email: string, name: string, password: string, referralCode: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, name: string, password: string, referralCode?: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -32,43 +36,91 @@ export function SupabaseAuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session and validate user
+  // Fetch user profile from database
+  const fetchUserProfile = async (userId: string): Promise<User | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, name, email_verified, image, created_at, updated_at')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      console.log('Fetched user profile:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+  };
+
+  // Check for existing session and fetch user data
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check localStorage first
-        const storedUser = localStorage.getItem('ocera_user');
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            
-            // Validate user still exists in database
-            const { data: dbUser, error } = await supabase
-              .from('users')
-              .select('id, email, name, created_at, updated_at')
-              .eq('id', parsedUser.id)
-              .single();
+        setLoading(true);
+        
+        // Get current session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setUser(null);
+          return;
+        } else {
+          console.log('Current session:', session);
+        }
 
-            if (!error && dbUser) {
-              const userData: User = {
-                id: dbUser.id,
-                email: dbUser.email,
-                name: dbUser.name,
-                created_at: dbUser.created_at,
-                updated_at: dbUser.updated_at,
-              };
-              setUser(userData);
-              localStorage.setItem('ocera_user', JSON.stringify(userData));
+        if (session?.user) {
+          console.log('Found existing session, fetching user profile...');
+          
+          // Fetch complete user profile from database
+          let userProfile = await fetchUserProfile(session.user.id);
+          
+          // If no profile exists but we have an active session, create the profile
+          if (!userProfile) {
+            console.log('Active session but no profile found, creating profile...');
+            
+            const newProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+              email_verified: session.user.email_confirmed_at || null,
+              image: session.user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([newProfile]);
+
+            if (insertError) {
+              console.error('Error creating profile for existing session:', insertError);
+              // Use fallback data
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+              });
             } else {
-              // User doesn't exist in DB anymore, clear localStorage
-              localStorage.removeItem('ocera_user');
-              setUser(null);
+              // Fetch the newly created profile
+              userProfile = await fetchUserProfile(session.user.id);
+              if (userProfile) {
+                setUser(userProfile);
+              }
             }
-          } catch (parseError) {
-            console.error('Error parsing stored user:', parseError);
-            localStorage.removeItem('ocera_user');
-            setUser(null);
+          } else {
+            // Profile exists, use it
+            setUser(userProfile);
           }
+        } else {
+          console.log('No active session found');
+          setUser(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -79,56 +131,144 @@ export function SupabaseAuthProvider({
     };
 
     initializeAuth();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          setLoading(true);
+          
+          // Check if profile exists, create if it doesn't
+          let userProfile = await fetchUserProfile(session.user.id);
+          
+          if (!userProfile) {
+            console.log('Creating profile for newly signed in user...');
+            
+            const newProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+              email_verified: session.user.email_confirmed_at || null,
+              image: session.user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([newProfile]);
+
+            if (!insertError) {
+              userProfile = await fetchUserProfile(session.user.id);
+            }
+          }
+          
+          if (userProfile) {
+            setUser(userProfile);
+          } else {
+            // Fallback if all else fails
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+            });
+          }
+          
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Optionally refresh user data when token is refreshed
+          const userProfile = await fetchUserProfile(session.user.id);
+          if (userProfile) {
+            setUser(userProfile);
+          }
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (data.success && data.user) {
-        // Fetch full user data from Supabase
-        const { data: dbUser, error } = await supabase
-          .from('users')
-          .select('id, email, name, created_at, updated_at')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!error && dbUser) {
-          const userData: User = {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name,
-            created_at: dbUser.created_at,
-            updated_at: dbUser.updated_at,
-          };
-          
-          setUser(userData);
-          localStorage.setItem('ocera_user', JSON.stringify(userData));
-          
-          return { success: true };
-        } else {
+      if (error) {
+        console.error('Sign in error:', error);
+        
+        // Check if user doesn't exist
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('Email not confirmed') ||
+            error.message.includes('Invalid email or password')) {
           return { 
             success: false, 
-            error: 'Failed to fetch user data' 
+            error: 'Invalid email or password',
+            needsSignup: true 
           };
         }
-      } else {
+        
         return { 
           success: false, 
-          error: data.error,
-          needsSignup: data.needsSignup 
+          error: error.message 
         };
       }
+
+      if (data.user && data.session) {
+        console.log('Sign in successful, fetching user from database...');
+        
+        // Fetch user profile from database
+        const userProfile = await fetchUserProfile(data.user.id);
+        
+        if (userProfile) {
+          setUser(userProfile);
+          return { success: true };
+        } else {
+          // If no database record exists, create one
+          const newProfile = {
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
+            email_verified: data.user.email_confirmed_at || null,
+            image: data.user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert([newProfile]);
+
+          if (!insertError) {
+            const createdProfile = await fetchUserProfile(data.user.id);
+            if (createdProfile) {
+              setUser(createdProfile);
+              return { success: true };
+            }
+          }
+          
+          // Fallback
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
+          });
+          return { success: true };
+        }
+      }
+
+      return { 
+        success: false, 
+        error: 'Sign in failed' 
+      };
     } catch (error) {
       console.error('Error signing in:', error);
       return { 
@@ -140,53 +280,80 @@ export function SupabaseAuthProvider({
     }
   };
 
-  const signUp = async (email: string, name: string, password: string, referralCode: string) => {
+  const signUp = async (email: string, name: string, password: string, referralCode: string = '') => {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, name, password, referralCode }),
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+            referral_code: referralCode,
+          }
+        }
       });
 
-      const data = await response.json();
-
-      if (data.success && data.user) {
-        // Fetch full user data from Supabase
-        const { data: dbUser, error } = await supabase
-          .from('users')
-          .select('id, email, name, created_at, updated_at')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!error && dbUser) {
-          const userData: User = {
-            id: dbUser.id,
-            email: dbUser.email,
-            name: dbUser.name,
-            created_at: dbUser.created_at,
-            updated_at: dbUser.updated_at,
-          };
-          
-          setUser(userData);
-          localStorage.setItem('ocera_user', JSON.stringify(userData));
-          
-          return { success: true };
-        } else {
-          return { 
-            success: false, 
-            error: 'Failed to fetch user data after signup' 
-          };
-        }
-      } else {
+      if (error) {
+        console.error('Sign up error:', error);
         return { 
           success: false, 
-          error: data.error 
+          error: error.message 
         };
       }
+
+      if (data.user) {
+        console.log('User signed up successfully:', data.user.id);
+        
+        // Create user profile in database
+        const newProfile = {
+          id: data.user.id,
+          email: data.user.email || email,
+          name: name,
+          email_verified: data.user.email_confirmed_at || null,
+          image: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([newProfile]);
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          return { 
+            success: false, 
+            error: 'Failed to create user profile' 
+          };
+        }
+
+        // If email confirmation is required, don't set user state yet
+        if (!data.session) {
+          return { 
+            success: true,
+            error: 'Please check your email to confirm your account'
+          };
+        }
+
+        // Fetch the newly created profile to set user state
+        const userProfile = await fetchUserProfile(data.user.id);
+        if (userProfile) {
+          setUser(userProfile);
+        } else {
+          // Use fallback data
+          setUser(newProfile);
+        }
+
+        return { success: true };
+      }
+
+      return { 
+        success: false, 
+        error: 'Sign up failed' 
+      };
     } catch (error) {
       console.error('Error signing up:', error);
       return { 
@@ -200,18 +367,16 @@ export function SupabaseAuthProvider({
 
   const signOut = async () => {
     try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      }
       setUser(null);
-      localStorage.removeItem('ocera_user');
-      
-      // Clear any session cookies
-      document.cookie.split(";").forEach((c) => {
-        const eqPos = c.indexOf("=");
-        const name = eqPos > -1 ? c.substr(0, eqPos) : c;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-      });
-      
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -219,30 +384,15 @@ export function SupabaseAuthProvider({
     try {
       if (!user) return;
       
-      // Refresh user data from Supabase
-      const { data: dbUser, error } = await supabase
-        .from('users')
-        .select('id, email, name, created_at, updated_at')
-        .eq('id', user.id)
-        .single();
-
-      if (!error && dbUser) {
-        const userData: User = {
-          id: dbUser.id,
-          email: dbUser.email,
-          name: dbUser.name,
-          created_at: dbUser.created_at,
-          updated_at: dbUser.updated_at,
-        };
-        
-        setUser(userData);
-        localStorage.setItem('ocera_user', JSON.stringify(userData));
-      } else {
-        // User no longer exists, sign out
-        await signOut();
+      setLoading(true);
+      const userProfile = await fetchUserProfile(user.id);
+      if (userProfile) {
+        setUser(userProfile);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

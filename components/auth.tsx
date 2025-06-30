@@ -85,6 +85,7 @@ export default function AuthForm() {
 
       if (data.success) {
         // Store user session
+        console.log("Sign in successful:", data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
         router.push("/dashboard");
       } else if (data.needsSignup) {
