@@ -1,19 +1,15 @@
-import type React from "react";
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Footer from "@/components/footer";
-import { Providers } from "./providers";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ocera - Original Character Social Platform",
-  description:
-    "The ultimate social platform for Original Character creators. Share, discover, and connect with fellow artists.",
-  keywords:
-    "original characters, OC, art, social media, creators, fantasy, character design",
-  generator: "v0.dev",
+  title: "Ocera - Share Your Original Characters",
+  description: "A social platform for sharing and discovering original characters",
 };
 
 export default function RootLayout({
@@ -24,12 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
-          <div className="min-h-screen flex flex-col">
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-        </Providers>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

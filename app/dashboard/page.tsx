@@ -1,541 +1,246 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSupabaseAuth } from "@/contexts/supabase-auth-context"; // Replace NextAuth with Supabase
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
-import Navigation from "@/components/navigation";
-import Image from "next/image";
-import Link from "next/link";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Heart,
-  Star,
-  Plus,
-  Trophy,
-  Sparkles,
-  Lock,
-  Eye,
-  FileText,
-  Medal,
-  Award,
+  PlusCircle,
   TrendingUp,
+  Users,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Eye,
+  Star,
   Crown,
   Zap,
+  Award,
 } from "lucide-react";
-import PostList from "@/components/post-list";
-import { useLoading } from "@/contexts/loading-context";
+import Navigation from "@/components/navigation";
+import Link from "next/link";
 
-const mockPosts: any[] = [];
+// Mock data
+const mockUser = {
+  name: "Demo User",
+  username: "demouser",
+  avatar: "/placeholder-user.jpg",
+  bio: "Character creator and artist",
+  followers: 1234,
+  following: 567,
+  characters: 89,
+};
+
+const mockCharacters = [
+  {
+    id: 1,
+    name: "Luna Starweaver",
+    image: "/placeholder.jpg",
+    likes: 245,
+    views: 1203,
+    tags: ["fantasy", "magic", "elf"],
+  },
+  {
+    id: 2,
+    name: "Kai Shadowblade",
+    image: "/placeholder.jpg",
+    likes: 189,
+    views: 892,
+    tags: ["warrior", "dark", "human"],
+  },
+];
+
+const mockActivity = [
+  { type: "like", user: "ArtistAlice", character: "Luna Starweaver", time: "2 hours ago" },
+  { type: "follow", user: "CreatorBob", time: "4 hours ago" },
+  { type: "comment", user: "FanCharlie", character: "Kai Shadowblade", time: "6 hours ago" },
+];
 
 export default function Dashboard() {
-  const { user } = useSupabaseAuth(); // Use Supabase auth instead of NextAuth
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { toast } = useToast();
-  const { setLoading } = useLoading();
-  const [processingReferral, setProcessingReferral] = useState(false);
-
-  const [followStates, setFollowStates] = useState<Record<string, boolean>>({});
-  const [likeStates, setLikeStates] = useState<
-    Record<number, { isLiked: boolean; count: number }>
-  >({});
-  const [commentStates, setCommentStates] = useState<
-    Record<number, { showComments: boolean; comments: string[] }>
-  >({});
-  const [favoriteStates, setFavoriteStates] = useState<Record<number, boolean>>(
-    {},
-  );
-  const [newComments, setNewComments] = useState<Record<number, string>>({});
-  const [shareStates, setShareStates] = useState<Record<number, boolean>>({});
-
-  // Process referral code for new users
-  useEffect(() => {
-    const processReferralCode = async () => {
-      if (!user?.email || processingReferral) return;
-
-      // Check if there's a pending referral code from localStorage
-      const pendingReferralCode = localStorage.getItem("pendingReferralCode");
-
-      // Or check URL for referral code (from redirect)
-      const urlReferralCode = searchParams.get("referral");
-
-      const referralCode = pendingReferralCode || urlReferralCode;
-
-      if (referralCode) {
-        setProcessingReferral(true);
-
-        try {
-          const response = await fetch("/api/process-referral", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ referralCode }),
-          });
-
-          const result = await response.json();
-
-          if (result.success) {
-            toast({
-              title: "Welcome to Ocera!",
-              description:
-                "Your account has been created and approved. Welcome to the community!",
-            });
-
-            // Clean up referral code from localStorage
-            localStorage.removeItem("pendingReferralCode");
-
-            // Update URL to remove referral parameter
-            if (urlReferralCode) {
-              const newUrl = new URL(window.location.href);
-              newUrl.searchParams.delete("referral");
-              router.replace(newUrl.pathname + newUrl.search);
-            }
-          } else {
-            toast({
-              title: "Referral Processing Failed",
-              description:
-                result.error || "Failed to process your referral code.",
-              variant: "destructive",
-            });
-          }
-        } catch (error) {
-          console.error("Error processing referral:", error);
-          toast({
-            title: "Error",
-            description:
-              "An error occurred while processing your referral code.",
-            variant: "destructive",
-          });
-        } finally {
-          setProcessingReferral(false);
-        }
-      }
-    };
-
-    processReferralCode();
-  }, [user?.email, searchParams]);
-
-  const toggleLike = (postId: number) => {
-    setLikeStates((prev) => ({
-      ...prev,
-      [postId]: {
-        isLiked: !prev[postId]?.isLiked,
-        count: prev[postId]?.isLiked
-          ? (prev[postId]?.count || 0) - 1
-          : (prev[postId]?.count || 0) + 1,
-      },
-    }));
-  };
-
-  const toggleFollow = (username: string) => {
-    setFollowStates((prev) => ({
-      ...prev,
-      [username]: !prev[username],
-    }));
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "public":
-        return <Eye className="h-4 w-4 text-green-600" />;
-      case "private":
-        return <Lock className="h-4 w-4 text-red-600" />;
-      case "draft":
-        return <FileText className="h-4 w-4 text-yellow-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="h-5 w-5 text-yellow-500" />;
-      case 2:
-        return <Medal className="h-5 w-5 text-gray-400" />;
-      case 3:
-        return <Award className="h-5 w-5 text-amber-600" />;
-      default:
-        return (
-          <span className="text-sm font-bold text-purple-600">#{rank}</span>
-        );
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
       <Navigation />
 
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-800 text-white">
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative container mx-auto px-4 py-16">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Welcome to OC universe!
-            </h1>
-            <p className="text-xl md:text-2xl text-purple-100 mb-8">
-              Discover amazing Original Characters, connect with talented
-              creators, and share your own imaginative worlds
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/create">
-                <Button
-                  size="lg"
-                  className="bg-white text-purple-700 hover:bg-purple-50 font-semibold px-8"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Create your first OC
-                </Button>
-              </Link>
-              <Link href="/leaderboard">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white bg-purple text-white hover:bg-white hover:text-purple-700 font-semibold px-8"
-                >
-                  <Trophy className="h-5 w-5 mr-2" />
-                  View Leaderboard
-                </Button>
-              </Link>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {mockUser.name}!</h1>
+              <p className="text-purple-100">Ready to share your creativity with the world?</p>
             </div>
+            <Link href="/create">
+              <Button className="bg-white text-purple-600 hover:bg-purple-50">
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Create Character
+              </Button>
+            </Link>
           </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute top-10 left-10 opacity-20">
-          <Sparkles className="h-16 w-16 text-purple-300" />
-        </div>
-        <div className="absolute bottom-10 right-10 opacity-20">
-          <Star className="h-12 w-12 text-purple-300" />
-        </div>
-        <div className="absolute top-1/2 left-1/4 opacity-10">
-          <Heart className="h-8 w-8 text-purple-300" />
-        </div>
-      </div>
-
-      {/* Main Content with Sidebar */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-4 gap-8">
-          {/* Left Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Saved OCs */}
-            <Card className="border-purple-200 shadow-lg">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Saved OCs
-                </h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  {
-                    name: "Luna Nightshade",
-                    creator: "ArtistAlice",
-                    image: "/placeholder.svg?height=60&width=60",
-                    likes: 342,
-                  },
-                  {
-                    name: "Ember Rose",
-                    creator: "ColorMaster",
-                    image: "/placeholder.svg?height=60&width=60",
-                    likes: 203,
-                  },
-                ].map((oc, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <Image
-                        src={oc.image || "/placeholder.svg"}
-                        alt={oc.name}
-                        width={40}
-                        height={40}
-                        className="rounded-lg object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-purple-900 text-sm truncate">
-                          {oc.name}
-                        </p>
-                        <p className="text-xs text-purple-600">
-                          by {oc.creator}
-                        </p>
-                      </div>
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Stats Overview */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="border-purple-200 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">Total Characters</p>
+                      <p className="text-3xl font-bold text-purple-900">{mockUser.characters}</p>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-purple-600">
-                      <span>{oc.likes} likes</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-xs text-purple-700 hover:bg-purple-200"
-                      >
-                        View
-                      </Button>
-                    </div>
+                    <Users className="h-8 w-8 text-purple-500" />
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Following Creators */}
-            <Card className="border-purple-200 shadow-lg">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Following
-                </h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  {
-                    name: "FantasyFan",
-                    displayName: "Maya Rodriguez",
-                    avatar: "/placeholder.svg",
-                    ocs: 12,
-                    newPosts: 3,
-                  },
-                  {
-                    name: "DragonArtist",
-                    displayName: "Marcus Chen",
-                    avatar: "/placeholder.svg",
-                    ocs: 8,
-                    newPosts: 1,
-                  },
-                ].map((creator, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={creator.avatar || "/placeholder.svg"}
-                        />
-                        <AvatarFallback className="bg-purple-200 text-purple-800 text-xs">
-                          {creator.displayName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-purple-900 text-sm truncate">
-                          {creator.displayName}
-                        </p>
-                        <p className="text-xs text-purple-600">
-                          @{creator.name}
-                        </p>
-                      </div>
-                      {creator.newPosts > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-purple-600 text-white text-xs"
-                        >
-                          {creator.newPosts}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Discover New OCs */}
-            <Card className="border-purple-200 shadow-lg">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Discover New OCs
-                </h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  {
-                    name: "Aria Moonweaver",
-                    creator: "MysticArt",
-                    image: "/placeholder.svg?height=60&width=60",
-                    trending: true,
-                  },
-                ].map((oc, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <Image
-                        src={oc.image || "/placeholder.svg"}
-                        alt={oc.name}
-                        width={40}
-                        height={40}
-                        className="rounded-lg object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="font-medium text-purple-900 text-sm truncate">
-                            {oc.name}
-                          </p>
-                          {oc.trending && (
-                            <TrendingUp className="h-3 w-3 text-orange-500" />
-                          )}
-                        </div>
-                        <p className="text-xs text-purple-600">
-                          by {oc.creator}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Feed */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-purple-900 mb-2">
-                Latest from Your Feed
-              </h2>
-              <p className="text-purple-600">
-                See what amazing characters your favorite creators have been
-                working on
-              </p>
-            </div>
-
-            <PostList mockPosts={mockPosts} />
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Your OCs */}
-            <Card className="border-purple-200 shadow-lg">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-purple-900">
-                  Your OCs
-                </h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    name: "Violet Shadowmere",
-                    likes: 45,
-                    image: "/placeholder.svg?height=60&width=60",
-                    status: "public",
-                  },
-                ].map((oc, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <Image
-                      src={oc.image || "/placeholder.svg"}
-                      alt={oc.name}
-                      width={40}
-                      height={40}
-                      className="rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium text-purple-900 text-sm truncate">
-                          {oc.name}
-                        </p>
-                        {getStatusIcon(oc.status)}
-                      </div>
-                      <p className="text-xs text-purple-600">
-                        {oc.likes} likes
+              <Card className="border-purple-200 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">Total Likes</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {mockCharacters.reduce((acc, char) => acc + char.likes, 0)}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs border-purple-300 text-purple-700"
-                    >
-                      Edit
-                    </Button>
+                    <Heart className="h-8 w-8 text-purple-500" />
                   </div>
-                ))}
-                <Link href="/create">
-                  <Button
-                    size="sm"
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-4"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Create New OC
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-200 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">Total Views</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {mockCharacters.reduce((acc, char) => acc + char.views, 0)}
+                      </p>
+                    </div>
+                    <Eye className="h-8 w-8 text-purple-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Your Characters */}
+            <Card className="border-purple-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-purple-900">Your Characters</CardTitle>
+                <CardDescription>Manage and view your character collection</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {mockCharacters.map((character) => (
+                    <Link key={character.id} href={`/character/${character.id}`}>
+                      <Card className="hover:shadow-lg transition-shadow cursor-pointer border-purple-100">
+                        <CardContent className="p-4">
+                          <div className="aspect-square relative mb-4 rounded-lg overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100">
+                            <div className="absolute inset-0 flex items-center justify-center text-purple-400">
+                              <Star className="w-12 h-12" />
+                            </div>
+                          </div>
+                          <h3 className="font-semibold text-purple-900 mb-2">{character.name}</h3>
+                          <div className="flex items-center justify-between text-sm text-purple-600 mb-2">
+                            <span className="flex items-center">
+                              <Heart className="w-4 h-4 mr-1" />
+                              {character.likes}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye className="w-4 h-4 mr-1" />
+                              {character.views}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {character.tags.slice(0, 3).map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Profile Card */}
+            <Card className="border-purple-200 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={mockUser.avatar} />
+                    <AvatarFallback className="bg-purple-100 text-purple-600">
+                      {mockUser.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-purple-900">{mockUser.name}</h3>
+                    <p className="text-sm text-purple-600">@{mockUser.username}</p>
+                  </div>
+                </div>
+
+                <p className="text-sm text-purple-700 mb-4">{mockUser.bio}</p>
+
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-purple-900">{mockUser.followers}</p>
+                    <p className="text-xs text-purple-600">Followers</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-purple-900">{mockUser.following}</p>
+                    <p className="text-xs text-purple-600">Following</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-purple-900">{mockUser.characters}</p>
+                    <p className="text-xs text-purple-600">Characters</p>
+                  </div>
+                </div>
+
+                <Link href="/profile/edit">
+                  <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
+                    Edit Profile
                   </Button>
                 </Link>
               </CardContent>
             </Card>
 
-            {/* Top Creators */}
+            {/* Recent Activity */}
             <Card className="border-purple-200 shadow-lg">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
-                    <Trophy className="h-5 w-5" />
-                    Top Creators
-                  </h3>
-                  <Badge
-                    variant="outline"
-                    className="border-purple-300 text-purple-700"
-                  >
-                    <Zap className="h-3 w-3 mr-1" />
-                    Live
-                  </Badge>
-                </div>
+                <CardTitle className="text-purple-900 text-lg">Recent Activity</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  {
-                    rank: 1,
-                    name: "FantasyMaster",
-                    displayName: "Elena Rodriguez",
-                    score: 15420,
-                    avatar: "/placeholder.svg",
-                    change: "+120",
-                    badge: "Legendary Creator",
-                  },
-                ].map((creator) => (
-                  <div
-                    key={creator.rank}
-                    className="p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center w-8 h-8">
-                        {getRankIcon(creator.rank)}
-                      </div>
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={creator.avatar || "/placeholder.svg"}
-                        />
-                        <AvatarFallback className="bg-purple-200 text-purple-800 text-xs">
-                          {creator.displayName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-purple-900 text-sm truncate">
-                          {creator.displayName}
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {mockActivity.map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm text-purple-900">
+                          <span className="font-medium">{activity.user}</span>
+                          {activity.type === 'like' && ` liked your character "${activity.character}"`}
+                          {activity.type === 'follow' && ` started following you`}
+                          {activity.type === 'comment' && ` commented on "${activity.character}"`}
                         </p>
-                        <p className="text-xs text-purple-600">
-                          @{creator.name}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-purple-900">
-                          {creator.score.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-green-600">
-                          {creator.change}
-                        </p>
+                        <p className="text-xs text-purple-500">{activity.time}</p>
                       </div>
                     </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-xs bg-purple-100 text-purple-700"
-                    >
-                      {creator.badge}
-                    </Badge>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
