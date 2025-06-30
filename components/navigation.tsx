@@ -61,6 +61,10 @@ export default function Navigation() {
     return 'U';
   };
 
+  if (!user) {
+    return null; // Don't render navigation if user is not authenticated
+  }
+
   return (
     <nav className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

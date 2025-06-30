@@ -39,6 +39,7 @@ export function SupabaseAuthProvider({
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      console.log(session?.user, "session user");
       setLoading(false);
     });
 
