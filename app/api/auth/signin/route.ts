@@ -1,49 +1,48 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, password } = await request.json();
 
-    if (!email) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: "Email is required" },
+        { success: false, error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    // Check if user exists
-    const { data: user, error: userError } = await supabaseAdmin
+    // Check if user exists and get password hash
+    const { data: user, error } = await supabaseAdmin
       .from("users")
-      .select("id, email, name")
+      .select("id, email, name, password")
       .eq("email", email)
       .single();
 
-    if (userError || !user) {
+    if (error || !user) {
       return NextResponse.json(
-        { success: false, needsSignup: true, error: "No account found" },
+        { success: false, needsSignup: true, error: "No account found with this email" },
         { status: 404 }
       );
     }
 
-    // Check if user is approved
-    // if (!user.is_approved) {
-    //   return NextResponse.json(
-    //     { success: false, error: "Account pending approval" },
-    //     { status: 403 }
-    //   );
-    // }
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { success: false, error: "Invalid password" },
+        { status: 401 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Sign in successful",
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        password: "", // Password should not be returned
-        // is_approved: user.is_approved,
       },
     });
   } catch (error) {
