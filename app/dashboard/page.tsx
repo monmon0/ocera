@@ -29,13 +29,21 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user: authUser, loading: authLoading } = useSupabaseAuth();
   const {
-    user,
+    user: storeUser,
     userCharacters,
     userPosts,
     charactersLoading,
     postsLoading,
-    fetchUserCharacters
+    fetchUserCharacters,
+    setUser
   } = useAppStore();
+
+  // Sync auth context user with store
+  useEffect(() => {
+    if (authUser && authUser !== storeUser) {
+      setUser(authUser);
+    }
+  }, [authUser, storeUser, setUser]);
 
   useEffect(() => {
     if (!authLoading && !authUser) {
@@ -62,14 +70,14 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
+  if (!authUser) {
     return null;
   }
 
   const stats = {
     characters: userCharacters.length,
-    followers: user.followers || 0,
-    following: user.following || 0,
+    followers: authUser.followers || 0,
+    following: authUser.following || 0,
     totalLikes: userCharacters.reduce((acc, char) => acc + char.likes, 0),
     totalViews: userCharacters.reduce((acc, char) => acc + char.views, 0)
   };
@@ -83,13 +91,13 @@ export default function DashboardPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Avatar className="w-16 h-16">
-              <AvatarImage src={user.image} alt={user.name} />
+              <AvatarImage src={authUser.image} alt={authUser.name} />
               <AvatarFallback className="bg-purple-200 text-purple-800 text-xl">
-                {user.name.charAt(0).toUpperCase()}
+                {authUser.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {authUser.name}!</h1>
               <p className="text-gray-600">Ready to create something amazing today?</p>
             </div>
           </div>

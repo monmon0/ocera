@@ -40,29 +40,14 @@ const navigation = [
 
 export default function Navigation(userInfo) {
   const [isOpen, setIsOpen] = useState(false);
-  const {signOut, loading } = useSupabaseAuth();
-  const [user, setUser] = useState();
-
-   useEffect(() => {
-    // Check if user is signed in
-    const storedUser = localStorage.getItem("user");
-    console.log("Stored user:", storedUser);
-    if (!storedUser) {
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-    } catch (error) {
-      localStorage.removeItem("user");
-      return;
-    }
-  }, []);
+  const { user, signOut, loading } = useSupabaseAuth();
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      // Clear any additional app-specific storage
+      localStorage.removeItem("user");
+      sessionStorage.clear();
       window.location.href = "/";
     } catch (error) {
       console.error("Error signing out:", error);

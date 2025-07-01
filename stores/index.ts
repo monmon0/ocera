@@ -254,7 +254,10 @@ export const useAppStore = create<AppStore>()(
         
         set({ charactersLoading: true });
         try {
-          // Mock data for demonstration
+          // TODO: Replace with actual Supabase call when database is set up
+          // const { data } = await supabase.from('characters').select('*').eq('created_by', user.id);
+          
+          // Mock data for demonstration - only show if user exists
           const mockCharacters: Character[] = [
             {
               id: '1',

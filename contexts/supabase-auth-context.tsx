@@ -75,19 +75,7 @@ export function SupabaseAuthProvider({
           console.log('Current session:', session);
         }
 
-        // Check for demo mode or set a default user for development
-        if (!session && process.env.NODE_ENV === 'development') {
-          const mockUser = {
-            id: 'demo-user-123',
-            email: 'demo@example.com',
-            name: 'Demo User',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setUser(mockUser);
-          setLoading(false);
-          return;
-        }
+        // No demo user - require actual authentication
 
         if (session?.user) {
           console.log('Found existing session, fetching user profile...');
@@ -386,7 +374,14 @@ export function SupabaseAuthProvider({
       if (error) {
         console.error('Error signing out:', error);
       }
+      
+      // Clear all local storage and user state
       setUser(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear any cached data in Zustand store if needed
+      // This ensures a clean logout
     } catch (error) {
       console.error('Error signing out:', error);
     } finally {
