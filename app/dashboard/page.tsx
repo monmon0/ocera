@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import toast from 'react-hot-toast';
 
 import { 
   TrendingUp, 
@@ -25,8 +26,6 @@ import {
 import Navigation from "@/components/navigation";
 import CharacterCollectionCard from "@/components/dashboard-characters";
 
-const mockCharacters = [
-];
 
 const mockActivity = [
   { type: "like", user: "ArtistAlice", character: "Luna Starweaver", time: "2 hours ago" },
@@ -39,6 +38,63 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [characters, setCharacters] = useState([]);
   const router = useRouter();
+
+  const [totalCharacters, setTotalCharacters] = useState(0);
+
+  const handleDeleteCharacter = async (characterId: string) => {
+  // Your delete logic here
+    try {
+      // Delete the character from the 'characters' table
+      const { error } = await supabase
+        .from('characters')
+        .delete()
+        .eq('id', characterId)
+
+      
+    if (error) {
+      console.error("Error Deleting", error);
+      toast.error("Failed to create character. Please try again.", {
+        duration: 5000,
+        style: {
+          background: '#EF4444',
+          color: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+        icon: '❌',
+      });
+    } else {      
+      // Success toast with link to view character
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <div className="font-medium">Character deleted successfully!</div>
+        </div>,
+        {
+          duration: 6000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+            borderRadius: '12px',
+            padding: '16px',
+            minWidth: '300px',
+          },
+          icon: '✨',
+        }
+      );
+    }
+      // Remove the character from the local state
+      setCharacters(prev => prev.filter(c => c.id !== characterId)); 
+      // Update the total characters count
+      setTotalCharacters(prev => prev - 1);
+
+      return true
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      toast.error('An unexpected error occurred')
+      return false
+    }
+
+  }
 
 useEffect(() => {
   const fetchUser = async () => {
@@ -68,7 +124,9 @@ useEffect(() => {
       }
 
       setUser(data);
+      setTotalCharacters(data.total_characters || 0);
       setCharacters(characters.data || []);
+  
       
     } catch (err) {
       console.error("Auth error:", err);
@@ -149,7 +207,7 @@ useEffect(() => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-purple-600">Total Characters</p>
-                      <p className="text-3xl font-bold text-purple-900">{user.total_characters}</p>
+                      <p className="text-3xl font-bold text-purple-900">{totalCharacters}</p>
                     </div>
                     <Users className="h-8 w-8 text-purple-500" />
                   </div>
@@ -186,7 +244,7 @@ useEffect(() => {
             </div>
 
             {/* Your Characters */}
-            <CharacterCollectionCard characters={characters} />
+            <CharacterCollectionCard onDelete={handleDeleteCharacter} characters={characters} />
           </div>
 
           {/* Sidebar */}
@@ -219,7 +277,7 @@ useEffect(() => {
                     <p className="text-xs text-purple-600">Following</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-purple-900">{user.total_characters}</p>
+                    <p className="text-lg font-bold text-purple-900">{totalCharacters}</p>
                     <p className="text-xs text-purple-600">Characters</p>
                   </div>
                 </div>
