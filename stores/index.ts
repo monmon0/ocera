@@ -254,12 +254,61 @@ export const useAppStore = create<AppStore>()(
         
         set({ charactersLoading: true });
         try {
-          // This would be replaced with actual Supabase call
-          // const { data } = await supabase.from('characters').select('*').eq('created_by', user.id);
-          // set({ userCharacters: data || [] });
+          // Mock data for demonstration
+          const mockCharacters: Character[] = [
+            {
+              id: '1',
+              name: 'Luna Nightshade',
+              shortDescription: 'A mysterious vampire with ancient powers',
+              fullDescription: 'Luna is a centuries-old vampire who has witnessed the rise and fall of empires.',
+              age: '300+',
+              species: 'Vampire',
+              occupation: 'Night Scholar',
+              location: 'Gothic Manor',
+              height: '5\'7"',
+              personalityTraits: ['Mysterious', 'Intelligent', 'Elegant'],
+              abilities: ['Blood Magic', 'Shadow Control', 'Enhanced Senses'],
+              interests: ['Ancient Literature', 'Art History', 'Astronomy'],
+              dislikes: ['Sunlight', 'Garlic', 'Shallow Conversation'],
+              tags: ['vampire', 'gothic', 'supernatural'],
+              colorPalette: [
+                { name: 'Midnight Purple', hex: '#2D1B69', description: 'Signature color' },
+                { name: 'Blood Red', hex: '#DC2626', description: 'Accent color' }
+              ],
+              likes: 156,
+              views: 892,
+              createdBy: user.id,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            {
+              id: '2',
+              name: 'Kai Stormwind',
+              shortDescription: 'A brave dragon rider from the sky kingdoms',
+              fullDescription: 'Kai soars through the clouds on his dragon companion, protecting the realm.',
+              age: '24',
+              species: 'Human',
+              occupation: 'Dragon Rider',
+              location: 'Sky Citadel',
+              height: '6\'0"',
+              personalityTraits: ['Brave', 'Loyal', 'Adventurous'],
+              abilities: ['Dragon Bond', 'Storm Magic', 'Aerial Combat'],
+              interests: ['Flying', 'Dragon Care', 'Weather Magic'],
+              dislikes: ['Being grounded', 'Corruption', 'Injustice'],
+              tags: ['dragon', 'fantasy', 'adventure'],
+              colorPalette: [
+                { name: 'Storm Blue', hex: '#1E40AF', description: 'Primary color' },
+                { name: 'Lightning Gold', hex: '#F59E0B', description: 'Accent color' }
+              ],
+              likes: 203,
+              views: 1245,
+              createdBy: user.id,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          ];
           
-          // Mock data for now
-          set({ userCharacters: [] });
+          set({ userCharacters: mockCharacters, characters: mockCharacters });
         } catch (error) {
           console.error('Error fetching user characters:', error);
         } finally {
@@ -289,12 +338,37 @@ export const useAppStore = create<AppStore>()(
         
         set({ socialLoading: true });
         try {
-          // This would be replaced with actual Supabase call
-          // const { data } = await supabase.from('follows').select('*, followed_user(*)').eq('follower_id', user.id);
-          // set({ following: data || [] });
+          // Mock following data
+          const mockFollowing: Creator[] = [
+            {
+              id: '1',
+              displayName: 'ArtistAlice',
+              username: 'alice_creates',
+              bio: 'Digital artist specializing in fantasy characters',
+              specialties: ['Fantasy', 'Digital Art', 'Character Design'],
+              followers: 1250,
+              totalLikes: 5600,
+              totalCharacters: 23,
+              lastActive: '2 hours ago',
+              newPosts: 2,
+              isFollowing: true
+            },
+            {
+              id: '2',
+              displayName: 'DragonMaster',
+              username: 'dragon_tales',
+              bio: 'Creator of epic dragon characters and stories',
+              specialties: ['Dragons', 'Epic Fantasy', 'Lore'],
+              followers: 890,
+              totalLikes: 3400,
+              totalCharacters: 15,
+              lastActive: '1 day ago',
+              newPosts: 0,
+              isFollowing: true
+            }
+          ];
           
-          // Mock data for now
-          set({ following: [] });
+          set({ following: mockFollowing });
         } catch (error) {
           console.error('Error fetching following:', error);
         } finally {
@@ -307,12 +381,8 @@ export const useAppStore = create<AppStore>()(
         if (!user) return;
         
         try {
-          // This would be replaced with actual Supabase call
-          // const { data } = await supabase.from('favorites').select('character_id').eq('user_id', user.id);
-          // set({ favorites: data?.map(f => f.character_id) || [] });
-          
-          // Mock data for now
-          set({ favorites: [] });
+          // Mock favorites data
+          set({ favorites: ['1'] }); // Luna Nightshade is favorited
         } catch (error) {
           console.error('Error fetching favorites:', error);
         }

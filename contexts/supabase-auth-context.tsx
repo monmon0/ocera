@@ -49,7 +49,7 @@ export function SupabaseAuthProvider({
         console.error('Error fetching user profile:', error);
         return null;
       }
-      
+
       console.log('Fetched user profile:', data);
       return data;
     } catch (error) {
@@ -63,10 +63,10 @@ export function SupabaseAuthProvider({
     const initializeAuth = async () => {
       try {
         setLoading(true);
-        
+
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('Error getting session:', error);
           setUser(null);
@@ -75,16 +75,30 @@ export function SupabaseAuthProvider({
           console.log('Current session:', session);
         }
 
+        // Check for demo mode or set a default user for development
+        if (!session && process.env.NODE_ENV === 'development') {
+          const mockUser = {
+            id: 'demo-user-123',
+            email: 'demo@example.com',
+            name: 'Demo User',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setUser(mockUser);
+          setLoading(false);
+          return;
+        }
+
         if (session?.user) {
           console.log('Found existing session, fetching user profile...');
-          
+
           // Fetch complete user profile from database
           let userProfile = await fetchUserProfile(session.user.id);
-          
+
           // If no profile exists but we have an active session, create the profile
           if (!userProfile) {
             console.log('Active session but no profile found, creating profile...');
-            
+
             const newProfile = {
               id: session.user.id,
               email: session.user.email || '',
@@ -136,16 +150,16 @@ export function SupabaseAuthProvider({
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event);
-        
+
         if (event === 'SIGNED_IN' && session?.user) {
           setLoading(true);
-          
+
           // Check if profile exists, create if it doesn't
           let userProfile = await fetchUserProfile(session.user.id);
-          
+
           if (!userProfile) {
             console.log('Creating profile for newly signed in user...');
-            
+
             const newProfile = {
               id: session.user.id,
               email: session.user.email || '',
@@ -164,7 +178,7 @@ export function SupabaseAuthProvider({
               userProfile = await fetchUserProfile(session.user.id);
             }
           }
-          
+
           if (userProfile) {
             setUser(userProfile);
           } else {
@@ -175,7 +189,7 @@ export function SupabaseAuthProvider({
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
             });
           }
-          
+
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -196,7 +210,7 @@ export function SupabaseAuthProvider({
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -204,7 +218,7 @@ export function SupabaseAuthProvider({
 
       if (error) {
         console.error('Sign in error:', error);
-        
+
         // Check if user doesn't exist
         if (error.message.includes('Invalid login credentials') || 
             error.message.includes('Email not confirmed') ||
@@ -215,7 +229,7 @@ export function SupabaseAuthProvider({
             needsSignup: true 
           };
         }
-        
+
         return { 
           success: false, 
           error: error.message 
@@ -224,10 +238,10 @@ export function SupabaseAuthProvider({
 
       if (data.user && data.session) {
         console.log('Sign in successful, fetching user from database...');
-        
+
         // Fetch user profile from database
         const userProfile = await fetchUserProfile(data.user.id);
-        
+
         if (userProfile) {
           setUser(userProfile);
           return { success: true };
@@ -254,7 +268,7 @@ export function SupabaseAuthProvider({
               return { success: true };
             }
           }
-          
+
           // Fallback
           setUser({
             id: data.user.id,
@@ -283,7 +297,7 @@ export function SupabaseAuthProvider({
   const signUp = async (email: string, name: string, password: string, referralCode: string = '') => {
     try {
       setLoading(true);
-      
+
       // Sign up with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -306,7 +320,7 @@ export function SupabaseAuthProvider({
 
       if (data.user) {
         console.log('User signed up successfully:', data.user.id);
-        
+
         // Create user profile in database
         const newProfile = {
           id: data.user.id,
@@ -383,7 +397,7 @@ export function SupabaseAuthProvider({
   const refreshUser = async () => {
     try {
       if (!user) return;
-      
+
       setLoading(true);
       const userProfile = await fetchUserProfile(user.id);
       if (userProfile) {
