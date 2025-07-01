@@ -23,36 +23,25 @@ import {
   Activity
 } from "lucide-react";
 import Navigation from "@/components/navigation";
-import { useUser } from "@/contexts/user-context";
-
-// Mock data
-const mockUser = {
-  name: "Demo User",
-  username: "demouser",
-  avatar: "/placeholder-user.jpg",
-  bio: "Character creator and artist",
-  followers: 1234,
-  following: 567,
-  characters: 89,
-};
+import CharacterCollectionCard from "@/components/dashboard-characters";
 
 const mockCharacters = [
-  {
-    id: 1,
-    name: "Luna Starweaver",
-    image: "/placeholder.jpg",
-    likes: 245,
-    views: 1203,
-    tags: ["fantasy", "magic", "elf"],
-  },
-  {
-    id: 2,
-    name: "Kai Shadowblade",
-    image: "/placeholder.jpg",
-    likes: 189,
-    views: 892,
-    tags: ["warrior", "dark", "human"],
-  },
+  // {
+  //   id: 1,
+  //   name: "Luna Starweaver",
+  //   image: "/placeholder.jpg",
+  //   likes: 245,
+  //   views: 1203,
+  //   tags: ["fantasy", "magic", "elf"],
+  // },
+  // {
+  //   id: 2,
+  //   name: "Kai Shadowblade",
+  //   image: "/placeholder.jpg",
+  //   likes: 189,
+  //   views: 892,
+  //   tags: ["warrior", "dark", "human"],
+  // },
 ];
 
 const mockActivity = [
@@ -66,36 +55,32 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
+useEffect(() => {
   const fetchUser = async () => {
     try {
-      console.log("Fetching user profile...");
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !sessionData?.session?.user) {
+      const stored = localStorage.getItem("user");
+      if (!stored) {
         router.push("/");
-        console.error("User not authenticated:", sessionError);
         return;
       }
 
-      const supabaseUser = sessionData.session.user;
-
-      const { data: dbUser, error: userError } = await supabase
+      const parsed = JSON.parse(stored);
+      const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("id", supabaseUser.id)
+        .eq("email", parsed.email)
         .single();
 
-      if (userError || !dbUser) {
-        console.error("Failed to fetch user profile:", userError);
-        router.push("/");
+      if (error || !data) {
+        console.error("DB fetch failed:", error);
+        // router.push("/");
         return;
       }
 
-      setUser(dbUser);
+      setUser(data);
     } catch (err) {
-      console.error("Unexpected error fetching user:", err);
-      router.push("/");
+      console.error("Auth error:", err);
+      // router.push("/");
     } finally {
       setLoading(false);
     }
@@ -105,11 +90,16 @@ export default function Dashboard() {
 }, [router]);
 
 
-
-  const handleSignOut = () => {
-    localStorage.removeItem("user");
-    router.push("/");
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut(); // 👈 kill Supabase session
+      localStorage.removeItem("user"); // 👈 clear custom session
+      router.push("/"); // 👈 redirect to home/login
+    } catch (err) {
+      console.error("Error signing out:", err);
+    }
   };
+
 
   if (loading) {
     return (
@@ -128,17 +118,17 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
-      <Navigation userInfo={user}/>
-
+      
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white">
+        <div className="bg-purple-400 rounded-2xl p-8 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
               <p className="text-purple-100">Ready to share your creativity with the world?</p>
             </div>
-            <Button asChild>
+            <Button asChild className="bg-purple-600 hover:bg-purple-700">
               <Link href="/create">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Character
@@ -197,7 +187,8 @@ export default function Dashboard() {
             </div>
 
             {/* Your Characters */}
-            <Card className="border-purple-200 shadow-lg">
+            <CharacterCollectionCard characters={mockCharacters} />
+            {/* <Card className="border-purple-200 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-purple-900">Your Characters</CardTitle>
                 <CardDescription>Manage and view your character collection</CardDescription>
@@ -237,7 +228,7 @@ export default function Dashboard() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Sidebar */}

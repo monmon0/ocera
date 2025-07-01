@@ -1,125 +1,184 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
+import { sendVerificationEmail } from "@/lib/email"; // you implement this
 
 export async function POST(request: NextRequest) {
   try {
     const { email, name, referralCode, password } = await request.json();
 
-    if (!email || !name || !referralCode) {
-      return NextResponse.json(
-        { success: false, error: "Email, name, and referral code are required" },
-        { status: 400 }
-      );
+    if (!email || !name || !referralCode || !password) {
+      return NextResponse.json({ success: false, error: "All fields are required" }, { status: 400 });
     }
 
-    // Check if user already exists
+    // Check if already exists
     const { data: existingUser } = await supabaseAdmin
       .from("users")
-      .select("id, email")
+      .select("id")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: "User already exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "User already exists" }, { status: 400 });
     }
 
     // Validate referral code
     const { data: referralData, error: referralError } = await supabaseAdmin
       .from("referral_codes")
-      .select("id, created_by, max_uses, used_count")
+      .select("id, used_count, max_uses")
       .eq("code", referralCode.toUpperCase())
       .eq("is_active", true)
       .single();
 
-    if (referralError || !referralData) {
-      return NextResponse.json(
-        { success: false, error: "Invalid referral code" },
-        { status: 400 }
-      );
+    if (referralError || !referralData || referralData.used_count >= referralData.max_uses) {
+      return NextResponse.json({ success: false, error: "Invalid or exhausted referral code" }, { status: 400 });
     }
 
-    // Check if referral code has reached max uses
-    if (referralData.max_uses && referralData.used_count >= referralData.max_uses) {
-      return NextResponse.json(
-        { success: false, error: "Referral code has reached maximum uses" },
-        { status: 400 }
-      );
-    }
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    try {
-      // Hash the password before storing
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const { data: newUser, error: insertError } = await supabaseAdmin
+      .from("users")
+      .insert({ email, name, password: hashedPassword, is_verified: false })
+      .select()
+      .single();
 
-      // Create new user
-      const { data: newUser, error: userError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          email,
-          name,
-          password: hashedPassword,
-          // is_approved: true, // Auto-approve users with valid referral codes
-          // referred_by: referralData.created_by,
-        })
-        .select()
-        .single();
+    if (insertError) throw new Error("Failed to create user");
 
-      if (userError) {
-        console.error("User creation error:", userError);
-        throw new Error("Failed to create user");
-      }
+    // Update referral count
+    await supabaseAdmin
+      .from("referral_codes")
+      .update({ used_count: referralData.used_count + 1 })
+      .eq("id", referralData.id);
 
-      // Create user referral record
-      // const { error: referralCreationError } = await supabaseAdmin
-      //   .from("user_referrals")
-      //   .insert({
-      //     referred_user_id: newUser.id,
-      //     referrer_user_id: referralData.created_by,
-      //     referral_code_id: referralData.id,
-      //     referral_code: referralCode.toUpperCase(),
-      //   });
+    // Generate token
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
 
-      // if (referralCreationError) {
-      //   throw new Error("Failed to create referral record");
-      // }
+    await supabaseAdmin.from("email_verification_tokens").insert({
+      user_id: newUser.id,
+      token,
+      expires_at: expiresAt.toISOString(),
+    });
 
-      // Update referral code usage count
-      const { error: updateError } = await supabaseAdmin
-        .from("referral_codes")
-        .update({ used_count: referralData.used_count + 1 })
-        .eq("id", referralData.id);
+    // Send email (you implement sendVerificationEmail)
+    await sendVerificationEmail(email, token);
 
-      if (updateError) {
-        throw new Error("Failed to update referral code usage");
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: "Account created successfully",
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          // is_approved: newUser.is_approved,
-        },
-      });
-    } catch (transactionError) {
-      console.error("Transaction error:", transactionError);
-      return NextResponse.json(
-        { success: false, error: "Failed to create account" },
-        { status: 500 }
-      );
-    }
-  } catch (error) {
-    console.error("Error creating account:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, message: "Check your email to verify account." });
+  } catch (err) {
+    console.error("Signup error:", err);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
+
+// import { NextRequest, NextResponse } from "next/server";
+// import { supabaseAdmin } from "@/lib/supabase";
+// import bcrypt from "bcryptjs";
+
+// export async function POST(request: NextRequest) {
+//   try {
+//     const { email, name, referralCode, password } = await request.json();
+
+//     if (!email || !name || !referralCode || !password) {
+//       return NextResponse.json(
+//         { success: false, error: "All fields are required" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Check if user already exists in custom DB
+//     const { data: existingUser } = await supabaseAdmin
+//       .from("users")
+//       .select("id")
+//       .eq("email", email)
+//       .maybeSingle();
+
+//     if (existingUser) {
+//       return NextResponse.json(
+//         { success: false, error: "User already exists" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Check referral code validity
+//     const { data: referralData, error: referralError } = await supabaseAdmin
+//       .from("referral_codes")
+//       .select("id, created_by, max_uses, used_count")
+//       .eq("code", referralCode.toUpperCase())
+//       .eq("is_active", true)
+//       .single();
+
+//     if (referralError || !referralData) {
+//       return NextResponse.json(
+//         { success: false, error: "Invalid referral code" },
+//         { status: 400 }
+//       );
+//     }
+
+//     if (referralData.max_uses && referralData.used_count >= referralData.max_uses) {
+//       return NextResponse.json(
+//         { success: false, error: "Referral code usage limit reached" },
+//         { status: 400 }
+//       );
+//     }
+
+//     // Create user in Supabase Auth for email verification
+//     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+//       email,
+//       password,
+//       email_confirm: false, // Force verification email
+//     });
+
+//     if (authError) {
+//       console.error("Auth creation error:", authError);
+//       return NextResponse.json(
+//         { success: false, error: "Failed to create auth user" },
+//         { status: 500 }
+//       );
+//     }
+
+//     // Hash password for your custom users table
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     const { data: newUser, error: insertError } = await supabaseAdmin
+//       .from("users")
+//       .insert({
+//         id: authUser.user.id, // Link to Supabase Auth ID
+//         email,
+//         name,
+//         password: hashedPassword,
+//       })
+//       .select()
+//       .single();
+
+//     if (insertError) {
+//       console.error("Insert error:", insertError);
+//       return NextResponse.json(
+//         { success: false, error: "Failed to create user in DB" },
+//         { status: 500 }
+//       );
+//     }
+
+//     // Update referral code usage
+//     await supabaseAdmin
+//       .from("referral_codes")
+//       .update({ used_count: referralData.used_count + 1 })
+//       .eq("id", referralData.id);
+
+//     return NextResponse.json({
+//       success: true,
+//       message: "Account created. Please verify your email to sign in.",
+//       user: {
+//         id: newUser.id,
+//         email: newUser.email,
+//         name: newUser.name,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Signup error:", err);
+//     return NextResponse.json(
+//       { success: false, error: "Server error" },
+//       { status: 500 }
+//     );
+//   }
+// }

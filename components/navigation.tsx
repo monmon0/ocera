@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { useSupabaseAuth } from "@/contexts/supabase-auth-context";
+import { supabase } from "@/lib/supabase";
 
 // Define the props interface
 interface NavigationProps {
@@ -40,21 +41,18 @@ interface NavigationProps {
 
 export default function Navigation({ userInfo }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { signOut, loading } = useSupabaseAuth();
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  // Debug logging
-  useEffect(() => {
-    console.log("User Info received:", userInfo);
-  }, [userInfo]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+    const handleSignOut = async () => {
+      try {
+        await supabase.auth.signOut(); // 👈 kill Supabase session
+        localStorage.removeItem("user"); // 👈 clear custom session
+        router.push("/"); // 👈 redirect to home/login
+      } catch (err) {
+        console.error("Error signing out:", err);
+      }
+    };
 
   const getUserInitials = (name: string | null | undefined, email: string | null | undefined) => {
     if (name) {
@@ -65,11 +63,6 @@ export default function Navigation({ userInfo }: NavigationProps) {
     }
     return '';
   };
-
-  // Don't render navigation if user is not authenticated
-  if (!userInfo) {
-    return null;
-  }
 
   return (
     <nav className="bg-white/30 backdrop-blur shadow-lg sticky top-0 z-50">
@@ -98,7 +91,7 @@ export default function Navigation({ userInfo }: NavigationProps) {
               </Button>
               
               {/* User Profile Dropdown */}
-              {userInfo && !loading ? (
+              {/* {userInfo && !loading ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -143,7 +136,7 @@ export default function Navigation({ userInfo }: NavigationProps) {
                 >
                   {loading ? "Loading..." : "Sign In"}
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
 

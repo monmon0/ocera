@@ -50,7 +50,6 @@ const mockOCs = [
 export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         {/* Profile Header */}

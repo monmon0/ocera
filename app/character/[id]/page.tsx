@@ -93,7 +93,6 @@ Despite her vampiric nature, Luna has retained much of her humanity through her 
 export default function CharacterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">

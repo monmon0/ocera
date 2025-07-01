@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,10 +10,12 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, X, Upload, Palette, FileText, User, Camera, Sparkles, Save, Eye, Quote } from "lucide-react"
+import { Plus, X, Upload, Palette, FileText, User, Camera, Sparkles, Save, Eye, Quote, Loader2 } from "lucide-react"
 import Navigation from "@/components/navigation"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { supabase } from "@/lib/supabase"
+import { uploadToCloudflare } from "@/lib/cloudflare/upload"; // adjust path
 
 interface ColorPalette {
   name: string
@@ -21,12 +23,16 @@ interface ColorPalette {
   description: string
 }
 
+
+
 export default function CreateOCPage() {
   // Basic Info State
   const [characterName, setCharacterName] = useState("")
   const [quote, setQuote] = useState("")
   const [shortDescription, setShortDescription] = useState("")
   const [fullDescription, setFullDescription] = useState("")
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null) // This should be set based on your auth logic
+
 
   // Character Details State
   const [age, setAge] = useState("")
@@ -54,6 +60,46 @@ export default function CreateOCPage() {
 
   const [showPreview, setShowPreview] = useState(false)
 
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Trigger file selection
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const updatedFiles = [...selectedFiles];
+    updatedFiles[index] = file;
+    setSelectedFiles(updatedFiles);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const updatedPreviews = [...previewUrls];
+      updatedPreviews[index] = reader.result as string;
+      setPreviewUrls(updatedPreviews);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const [referenceSheet, setReferenceSheet] = useState<File | null>(null);
+  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
+
+  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setReferenceSheet(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReferencePreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+
   // Helper functions for managing arrays
   const addToArray = (value: string, array: string[], setter: (arr: string[]) => void) => {
     if (value.trim() && !array.includes(value.trim())) {
@@ -80,31 +126,119 @@ export default function CreateOCPage() {
     }
   }
 
-  const handleSubmit = () => {
-    // Here you would typically send the data to your backend
-    console.log("Character Data:", {
-      characterName,
-      quote,
-      shortDescription,
-      fullDescription,
-      age,
-      species,
-      occupation,
-      location,
-      height,
-      personalityTraits,
-      abilities,
-      interests,
-      dislikes,
-      tags,
-      colorPalette,
-    })
-    alert("Character created successfully! (This is a demo)")
-  }
+  const [moodboardImage, setMoodboardImage] = useState<File | null>(null);
+  const [moodboardPreviewUrl, setMoodboardPreviewUrl] = useState<string | null>(null);
+
+  const handleMoodboardUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setMoodboardImage(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setMoodboardPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+
+ const handleSubmit = async () => {
+
+   if (isLoading) return; // Prevent multiple clicks
+    setIsLoading(true);
+
+  const uploadedImageUrls = await Promise.all(
+    selectedFiles.map(file => uploadToCloudflare(file)) // selectedFiles is File[]
+  );
+  const filteredUrls = uploadedImageUrls.filter(Boolean);
+
+  const referenceSheetUrl = referenceSheet
+    ? await uploadToCloudflare(referenceSheet)
+    : null;
+
+  const moodboardImageUrl = moodboardImage
+    ? await uploadToCloudflare(moodboardImage)
+    : null;
+
+
+  const { data, error } = await supabase
+    .from("characters")
+    .insert([
+      {
+        user_id: currentUserId, // must be defined somewhere
+        name: characterName,
+        quote,
+        description: fullDescription,
+        short_description: shortDescription,
+        age,
+        species,
+        occupation,
+        location,
+        height,
+        personality_traits: personalityTraits, // must be array of string
+        abilities,
+        interests,
+        dislikes,
+        tags, // must be array of string
+        color_palette: colorPalette, // must be array of string
+        char_img: filteredUrls,
+        moodboard: moodboardImageUrl,
+        is_public: true,
+        likes_count: 0,
+        views_count: 0,
+        ref_sheet: referenceSheetUrl,
+      },
+    ]);
+
+    // make toast prettier
+    if (error) {
+      console.error("Error inserting character:", error);
+      setIsLoading(false);
+      alert("Failed to create character.");
+    } else {
+      console.log("Character created:", data);
+      setIsLoading(false);
+      alert("Character created successfully!");
+      // Reset form after successful submission
+      // this is ugly and stupid and i am stupid
+      setCharacterName("");
+      setQuote("");
+      setShortDescription("");
+      setFullDescription("");
+      setAge("");
+      setSpecies("");
+      setOccupation("");
+      setLocation("");
+      setHeight("");
+      setPersonalityTraits([]); 
+      setAbilities([]);
+      setInterests([]);
+      setDislikes([]);
+      setTags([]);
+      setColorPalette([{ name: "", hex: "#000000", description: "" }]);
+      setSelectedFiles([]);
+      setPreviewUrls([]);
+      setReferenceSheet(null);
+      setReferencePreviewUrl(null);
+      setMoodboardImage(null);
+      setMoodboardPreviewUrl(null);
+      setShowPreview(false); // Close preview dialog
+    }
+  };
+
+  useEffect(() => {
+   const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setCurrentUserId(parsed.id); // Assuming the user object has an 'id' field
+    } else {
+      console.warn("No user found in localStorage");
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -548,48 +682,84 @@ export default function CreateOCPage() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {/* Character Images */}
-                  <div className="space-y-4">
-                    <Label className="text-purple-900 text-lg font-semibold">Character Images</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className="aspect-square border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer"
-                        >
-                          <Upload className="h-8 w-8 text-purple-400 mb-2" />
-                          <span className="text-sm text-purple-600">Upload Image {i}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(8)].map((_, i) => (
+                      <label
+                        key={i}
+                        htmlFor={`image-upload-${i}`}
+                        className="aspect-square border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer overflow-hidden"
+                      >
+                        {previewUrls[i] ? (
+                          <img src={previewUrls[i]} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-purple-400 mb-2" />
+                            <span className="text-sm text-purple-600">Upload Image {i + 1}</span>
+                          </>
+                        )}
+                        <input
+                          id={`image-upload-${i}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileInput(e, i)}
+                        />
+                      </label>
+                    ))}
                   </div>
+
 
                   {/* Reference Sheet */}
-                  <div className="space-y-4">
-                    <Label className="text-purple-900 text-lg font-semibold">Reference Sheet</Label>
-                    <div className="border-2 border-dashed border-purple-300 rounded-lg p-8 flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer">
-                      <Upload className="h-12 w-12 text-purple-400 mb-4" />
-                      <span className="text-lg text-purple-600 mb-2">Upload Reference Sheet</span>
-                      <span className="text-sm text-purple-500">
-                        Recommended: High resolution image showing character details
-                      </span>
-                    </div>
-                  </div>
+                  <label
+                    htmlFor="reference-upload"
+                    className="border-2 border-dashed border-purple-300 rounded-lg p-8 flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer overflow-hidden"
+                  >
+                    {referencePreviewUrl ? (
+                      <img src={referencePreviewUrl} alt="Reference Sheet" className="max-h-64 object-contain" />
+                    ) : (
+                      <>
+                        <Upload className="h-12 w-12 text-purple-400 mb-4" />
+                        <span className="text-lg text-purple-600 mb-2">Upload Reference Sheet</span>
+                        <span className="text-sm text-purple-500">
+                          Image must be under 10MB and in JPG/PNG format
+                        </span>
+                      </>
+                    )}
+                    <input
+                      id="reference-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleReferenceUpload}
+                    />
+                  </label>
+
 
                   {/* Moodboard */}
-                  <div className="space-y-4">
-                    <Label className="text-purple-900 text-lg font-semibold">Moodboard Images</Label>
-                    <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                      {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div
-                          key={i}
-                          className="aspect-square border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer"
-                        >
-                          <Upload className="h-6 w-6 text-purple-400 mb-1" />
-                          <span className="text-xs text-purple-600">Mood {i}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <label
+                    htmlFor="moodboard-upload"
+                    className="border-2 border-dashed border-purple-300 rounded-lg p-8 flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer overflow-hidden"
+                  >
+                    {moodboardPreviewUrl ? (
+                      <img src={moodboardPreviewUrl} alt="Moodboard" className="max-h-64 object-contain" />
+                    ) : (
+                      <>
+                        <Upload className="h-12 w-12 text-purple-400 mb-4" />
+                        <span className="text-lg text-purple-600 mb-2">Upload Moodboard</span>
+                        <span className="text-sm text-purple-500">
+                          Image must be under 10MB and in JPG/PNG format
+                        </span>
+                      </>
+                    )}
+                    <input
+                      id="moodboard-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMoodboardUpload}
+                    />
+                  </label>
+
                 </CardContent>
               </Card>
             </TabsContent>
@@ -712,10 +882,23 @@ export default function CreateOCPage() {
                 Preview
               </Button>
 
-              <Button onClick={handleSubmit} className="bg-purple-600 hover:bg-purple-700 text-white">
-                <Save className="h-4 w-4 mr-2" />
-                Create Character
-              </Button>
+              <Button 
+              onClick={handleSubmit} 
+              disabled={isLoading}
+              className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Create Character
+                </>
+              )}
+            </Button>
             </div>
           </div>
           {/* Preview Modal */}

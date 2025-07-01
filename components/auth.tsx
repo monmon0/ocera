@@ -1,23 +1,22 @@
-
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
 
 export default function AuthForm() {
+  const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,43 +25,28 @@ export default function AuthForm() {
     setSuccess("");
 
     try {
-      // First validate the referral code
-      const validateResponse = await fetch("/api/validate-referral", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ referralCode }),
-      });
-
-      const validateData = await validateResponse.json();
-
-      if (!validateData.valid) {
-        setError(validateData.error || "Invalid referral code");
-        setLoading(false);
-        return;
-      }
-
-      // Create user account
-      const signupResponse = await fetch("/api/auth/signup", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, referralCode, password }),
       });
 
-      const signupData = await signupResponse.json();
+      const data = await res.json();
 
-      if (signupData.success) {
-        setSuccess("Account created successfully! You can now sign in.");
-        // Store user session
-        localStorage.setItem("user", JSON.stringify(signupData.user));
-        setTimeout(() => router.push("/dashboard"), 1500);
-      } else {
-        setError(signupData.error || "Failed to create account");
+      if (!data.success) {
+        setError(data.error || "Sign up failed");
+        return;
       }
-    } catch (error) {
-      setError("An error occurred. Please try again.");
-    }
 
-    setLoading(false);
+      setSuccess(data.message || "Sign up successful! Please check your email to verify your account.");
+      localStorage.setItem("user", JSON.stringify(data.user));
+      // setTimeout(() => router.push("/dashboard"), 1500);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -71,33 +55,32 @@ export default function AuthForm() {
     setError("");
 
     try {
-      console.log("Signing in with email:", email);
-      const response = await fetch("/api/auth/signin", {
+      const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
+      const data = await res.json();
 
-      if (data.success) {
-        // Store user session
-        localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/dashboard");
-      } else if (data.needsSignup) {
-        setError("No account found. Please sign up first.");
-        setIsSignUp(true);
-      } else {
-        setError(data.error || "Failed to sign in");
+      if (!data.success) {
+        if (data.needsSignup) {
+          setError("No account found. Please sign up.");
+          setIsSignUp(true);
+        } else {
+          setError(data.error || "Sign in failed");
+        }
+        return;
       }
-    } catch (error) {
-      setError("An error occurred. Please try again in a moment" );
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -108,10 +91,7 @@ export default function AuthForm() {
             {isSignUp ? "Join Ocera" : "Welcome to Ocera"}
           </CardTitle>
           <CardDescription className="text-purple-200 text-center">
-            {isSignUp 
-              ? "Create your account with a referral code"
-              : "Sign in to your account"
-            }
+            {isSignUp ? "Sign up with a referral code" : "Sign in to your account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,12 +105,12 @@ export default function AuthForm() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
                   placeholder="Your full name"
+                  className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
                 />
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white">Email</Label>
               <Input
@@ -139,12 +119,12 @@ export default function AuthForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                placeholder="you@example.com"
                 className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
-                placeholder="your@email.com"
               />
             </div>
 
-              <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
                 id="password"
@@ -152,8 +132,8 @@ export default function AuthForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                placeholder="Your password"
                 className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
-                placeholder="Set a strong password"
               />
             </div>
 
@@ -166,26 +146,21 @@ export default function AuthForm() {
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   required
-                  className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
                   placeholder="WELCOME2024"
+                  className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
                 />
               </div>
             )}
 
-            {error && (
-              <div className="text-red-300 text-sm">{error}</div>
-            )}
+            {error && <div className="text-sm text-red-300">{error}</div>}
+            {success && <div className="text-sm text-green-300">{success}</div>}
 
-            {success && (
-              <div className="text-green-300 text-sm">{success}</div>
-            )}
-
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
               disabled={loading}
             >
-              {loading ? "Processing..." : (isSignUp ? "Sign Up" : "Sign In")}
+              {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
             </Button>
 
             <Button

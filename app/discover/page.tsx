@@ -27,9 +27,9 @@ import {
   UserPlus,
   Bookmark,
 } from "lucide-react"
-import Navigation from "@/components/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase";
 
 const mockTrendingOCs = [
   {
@@ -288,7 +288,6 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
