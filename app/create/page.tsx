@@ -11,11 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, X, Upload, Palette, FileText, User, Camera, Sparkles, Save, Eye, Quote, Loader2 } from "lucide-react"
-import Navigation from "@/components/navigation"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase"
 import { uploadToCloudflare } from "@/lib/cloudflare/upload"; // adjust path
+import toast from 'react-hot-toast';
 
 interface ColorPalette {
   name: string
@@ -144,88 +144,138 @@ export default function CreateOCPage() {
 
 
  const handleSubmit = async () => {
+  if (isLoading) return; // Prevent multiple clicks
+  setIsLoading(true);
 
-   if (isLoading) return; // Prevent multiple clicks
-    setIsLoading(true);
+  try {
+    const uploadedImageUrls = await Promise.all(
+      selectedFiles.map(file => uploadToCloudflare(file)) // selectedFiles is File[]
+    );
+    const filteredUrls = uploadedImageUrls.filter(Boolean);
 
-  const uploadedImageUrls = await Promise.all(
-    selectedFiles.map(file => uploadToCloudflare(file)) // selectedFiles is File[]
-  );
-  const filteredUrls = uploadedImageUrls.filter(Boolean);
+    const referenceSheetUrl = referenceSheet
+      ? await uploadToCloudflare(referenceSheet)
+      : null;
 
-  const referenceSheetUrl = referenceSheet
-    ? await uploadToCloudflare(referenceSheet)
-    : null;
+    const moodboardImageUrl = moodboardImage
+      ? await uploadToCloudflare(moodboardImage)
+      : null;
 
-  const moodboardImageUrl = moodboardImage
-    ? await uploadToCloudflare(moodboardImage)
-    : null;
+    const { data, error } = await supabase
+      .from("characters")
+      .insert([
+        {
+          user_id: currentUserId, // must be defined somewhere
+          name: characterName,
+          quote,
+          description: fullDescription,
+          short_description: shortDescription,
+          age,
+          species,
+          occupation,
+          location,
+          height,
+          personality_traits: personalityTraits, // must be array of string
+          abilities,
+          interests,
+          dislikes,
+          tags, // must be array of string
+          color_palette: colorPalette, // must be array of string
+          char_img: filteredUrls,
+          moodboard: moodboardImageUrl,
+          is_public: true,
+          likes_count: 0,
+          views_count: 0,
+          ref_sheet: referenceSheetUrl,
+        },
+      ])
+      .select(); // Add select() to get the inserted data back
 
-
-  const { data, error } = await supabase
-    .from("characters")
-    .insert([
-      {
-        user_id: currentUserId, // must be defined somewhere
-        name: characterName,
-        quote,
-        description: fullDescription,
-        short_description: shortDescription,
-        age,
-        species,
-        occupation,
-        location,
-        height,
-        personality_traits: personalityTraits, // must be array of string
-        abilities,
-        interests,
-        dislikes,
-        tags, // must be array of string
-        color_palette: colorPalette, // must be array of string
-        char_img: filteredUrls,
-        moodboard: moodboardImageUrl,
-        is_public: true,
-        likes_count: 0,
-        views_count: 0,
-        ref_sheet: referenceSheetUrl,
-      },
-    ]);
-
-    // make toast prettier
     if (error) {
       console.error("Error inserting character:", error);
-      setIsLoading(false);
-      alert("Failed to create character.");
+      toast.error("Failed to create character. Please try again.", {
+        duration: 5000,
+        style: {
+          background: '#EF4444',
+          color: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+        },
+        icon: '❌',
+      });
     } else {
-      console.log("Character created:", data);
-      setIsLoading(false);
-      alert("Character created successfully!");
+      const createdCharacter = data[0];
+      console.log("Character created:", createdCharacter);
+      
+      // Success toast with link to view character
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <div className="font-medium">Character created successfully!</div>
+          <button
+            onClick={() => {
+              // Navigate to character page - adjust route as needed
+              window.location.href = `/character/${createdCharacter.id}`;
+              // Or if using React Router: navigate(`/character/${createdCharacter.id}`);
+            }}
+            className="text-blue-600 hover:text-blue-800 underline text-sm font-medium transition-colors"
+          >
+            View {characterName} →
+          </button>
+        </div>,
+        {
+          duration: 6000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+            borderRadius: '12px',
+            padding: '16px',
+            minWidth: '300px',
+          },
+          icon: '✨',
+        }
+      );
+      
       // Reset form after successful submission
-      // this is ugly and stupid and i am stupid
-      setCharacterName("");
-      setQuote("");
-      setShortDescription("");
-      setFullDescription("");
-      setAge("");
-      setSpecies("");
-      setOccupation("");
-      setLocation("");
-      setHeight("");
-      setPersonalityTraits([]); 
-      setAbilities([]);
-      setInterests([]);
-      setDislikes([]);
-      setTags([]);
-      setColorPalette([{ name: "", hex: "#000000", description: "" }]);
-      setSelectedFiles([]);
-      setPreviewUrls([]);
-      setReferenceSheet(null);
-      setReferencePreviewUrl(null);
-      setMoodboardImage(null);
-      setMoodboardPreviewUrl(null);
-      setShowPreview(false); // Close preview dialog
+      // setCharacterName("");
+      // setQuote("");
+      // setShortDescription("");
+      // setFullDescription("");
+      // setAge("");
+      // setSpecies("");
+      // setOccupation("");
+      // setLocation("");
+      // setHeight("");
+      // setPersonalityTraits([]); 
+      // setAbilities([]);
+      // setInterests([]);
+      // setDislikes([]);
+      // setTags([]);
+      // setColorPalette([{ name: "", hex: "#000000", description: "" }]);
+      // setSelectedFiles([]);
+      // setPreviewUrls([]);
+      // setReferenceSheet(null);
+      // setReferencePreviewUrl(null);
+      // setMoodboardImage(null);
+      // setMoodboardPreviewUrl(null);
+      // setShowPreview(false); // Close preview dialog
     }
-  };
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    toast.error("An unexpected error occurred. Please try again.", {
+      duration: 5000,
+      style: {
+        background: '#EF4444',
+        color: 'white',
+        borderRadius: '12px',
+        padding: '16px',
+      },
+      icon: '❌',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   useEffect(() => {
    const stored = localStorage.getItem("user");

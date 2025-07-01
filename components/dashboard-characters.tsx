@@ -49,11 +49,11 @@ export default function CharacterCollectionCard({ characters }: Props) {
                   <div className="flex items-center justify-between text-sm text-purple-600 mb-2">
                     <span className="flex items-center">
                       <Heart className="w-4 h-4 mr-1" />
-                      {character.likes}
+                      {character.likes_count}
                     </span>
                     <span className="flex items-center">
                       <Eye className="w-4 h-4 mr-1" />
-                      {character.views}
+                      {character.views_count}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1">

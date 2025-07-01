@@ -26,22 +26,6 @@ import Navigation from "@/components/navigation";
 import CharacterCollectionCard from "@/components/dashboard-characters";
 
 const mockCharacters = [
-  // {
-  //   id: 1,
-  //   name: "Luna Starweaver",
-  //   image: "/placeholder.jpg",
-  //   likes: 245,
-  //   views: 1203,
-  //   tags: ["fantasy", "magic", "elf"],
-  // },
-  // {
-  //   id: 2,
-  //   name: "Kai Shadowblade",
-  //   image: "/placeholder.jpg",
-  //   likes: 189,
-  //   views: 892,
-  //   tags: ["warrior", "dark", "human"],
-  // },
 ];
 
 const mockActivity = [
@@ -53,6 +37,7 @@ const mockActivity = [
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [characters, setCharacters] = useState([]);
   const router = useRouter();
 
 useEffect(() => {
@@ -70,6 +55,11 @@ useEffect(() => {
         .select("*")
         .eq("email", parsed.email)
         .single();
+      
+      const characters = await supabase
+        .from("characters")
+        .select("*")
+        .eq("user_id", parsed.id);
 
       if (error || !data) {
         console.error("DB fetch failed:", error);
@@ -78,6 +68,8 @@ useEffect(() => {
       }
 
       setUser(data);
+      setCharacters(characters.data || []);
+      
     } catch (err) {
       console.error("Auth error:", err);
       // router.push("/");
@@ -122,22 +114,29 @@ useEffect(() => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Header */}
-        <div className="bg-purple-400 rounded-2xl p-8 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
-              <p className="text-purple-100">Ready to share your creativity with the world?</p>
+        <div className="relative rounded-2xl p-8 mb-8 text-white overflow-hidden ">
+            <img 
+              src={user?.banner_img || "/api/placeholder/1200/300"}
+              alt="Creative background"
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-40" />
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
+                <p className="text-gray-100">Ready to share your creativity with the world?</p>
+              </div>
+              <Button asChild className="bg-purple-600 hover:bg-purple-700">
+                <Link href="/create">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Character
+                </Link>
+              </Button>
+              <Button className="text-black" variant="outline" onClick={handleSignOut}>
+                Sign Out
+              </Button>
             </div>
-            <Button asChild className="bg-purple-600 hover:bg-purple-700">
-              <Link href="/create">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Character
-              </Link>
-            </Button>
-            <Button className="text-black" variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -187,48 +186,7 @@ useEffect(() => {
             </div>
 
             {/* Your Characters */}
-            <CharacterCollectionCard characters={mockCharacters} />
-            {/* <Card className="border-purple-200 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-purple-900">Your Characters</CardTitle>
-                <CardDescription>Manage and view your character collection</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {mockCharacters.map((character) => (
-                    <Link key={character.id} href={`/character/${character.id}`}>
-                      <Card className="hover:shadow-lg transition-shadow cursor-pointer border-purple-100">
-                        <CardContent className="p-4">
-                          <div className="aspect-square relative mb-4 rounded-lg overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100">
-                            <div className="absolute inset-0 flex items-center justify-center text-purple-400">
-                              <Star className="w-12 h-12" />
-                            </div>
-                          </div>
-                          <h3 className="font-semibold text-purple-900 mb-2">{character.name}</h3>
-                          <div className="flex items-center justify-between text-sm text-purple-600 mb-2">
-                            <span className="flex items-center">
-                              <Heart className="w-4 h-4 mr-1" />
-                              {character.likes}
-                            </span>
-                            <span className="flex items-center">
-                              <Eye className="w-4 h-4 mr-1" />
-                              {character.views}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {character.tags.slice(0, 3).map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs bg-purple-100 text-purple-700">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card> */}
+            <CharacterCollectionCard characters={characters} />
           </div>
 
           {/* Sidebar */}
@@ -238,7 +196,7 @@ useEffect(() => {
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4 mb-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.image} />
                     <AvatarFallback className="bg-purple-100 text-purple-600">
                       {user.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
@@ -269,6 +227,11 @@ useEffect(() => {
                 <Link href="/profile/edit">
                   <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
                     Edit Profile
+                  </Button>
+                </Link>
+                <Link href={`/profile/${user.id}`}>
+                  <Button  variant = "ghost" className="w-full mt-4 bg-white/0 text-purple-300 hover:bg-purple-700">
+                    View My Profile
                   </Button>
                 </Link>
               </CardContent>
