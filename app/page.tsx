@@ -15,15 +15,15 @@ export default function AuthPage() {
   useEffect(() => {
     // Check if user is already signed in
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        router.push("/dashboard");
-      } catch (error) {
-        localStorage.removeItem("user");
-      }
-    }
+    // if (storedUser) {
+    //   try {
+    //     const parsedUser = JSON.parse(storedUser);
+    //     setUser(parsedUser);
+    //     router.push("/dashboard");
+    //   } catch (error) {
+    //     localStorage.removeItem("user");
+    //   }
+    // }
     setLoading(false);
   }, [router]);
 

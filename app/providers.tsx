@@ -1,7 +1,9 @@
-
 "use client";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SupabaseAuthProvider } from "@/contexts/supabase-auth-context";
+import { UserProvider } from "@/contexts/user-context";
+import { LoadingProvider } from "@/contexts/loading-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +13,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      {children}
+      <LoadingProvider>
+        <SupabaseAuthProvider>
+          <UserProvider>{children}</UserProvider>
+        </SupabaseAuthProvider>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }

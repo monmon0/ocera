@@ -75,18 +75,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Create user referral record
-      const { error: referralCreationError } = await supabaseAdmin
-        .from("user_referrals")
-        .insert({
-          referred_user_id: newUser.id,
-          referrer_user_id: referralData.created_by,
-          referral_code_id: referralData.id,
-          referral_code: referralCode.toUpperCase(),
-        });
+      // const { error: referralCreationError } = await supabaseAdmin
+      //   .from("user_referrals")
+      //   .insert({
+      //     referred_user_id: newUser.id,
+      //     referrer_user_id: referralData.created_by,
+      //     referral_code_id: referralData.id,
+      //     referral_code: referralCode.toUpperCase(),
+      //   });
 
-      if (referralCreationError) {
-        throw new Error("Failed to create referral record");
-      }
+      // if (referralCreationError) {
+      //   throw new Error("Failed to create referral record");
+      // }
 
       // Update referral code usage count
       const { error: updateError } = await supabaseAdmin

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -28,19 +28,24 @@ import {
 } from "lucide-react";
 import { useSupabaseAuth } from "@/contexts/supabase-auth-context";
 
-const navigation = [
-  // { name: "Dashboard", href: "/dashboard", icon: Home },
-  // { name: "Discover", href: "/discover", icon: Search },
-  // { name: "Create", href: "/create", icon: PlusCircle },
-  // { name: "Favourites", href: "/favourites", icon: Heart },
-  // { name: "Following", href: "/following", icon: Users },
-  // { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-];
+// Define the props interface
+interface NavigationProps {
+  userInfo?: {
+    name?: string;
+    email?: string;
+    id?: string;
+    // Add other user properties as needed
+  };
+}
 
-export default function Navigation() {
+export default function Navigation({ userInfo }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const pathname = usePathname();
-  const { user, signOut, loading } = useSupabaseAuth();
+  const { signOut, loading } = useSupabaseAuth();
+
+  // Debug logging
+  useEffect(() => {
+    console.log("User Info received:", userInfo);
+  }, [userInfo]);
 
   const handleSignOut = async () => {
     try {
@@ -58,15 +63,16 @@ export default function Navigation() {
     if (email) {
       return email[0].toUpperCase();
     }
-    return 'U';
+    return '';
   };
 
-  if (!user) {
-    return null; // Don't render navigation if user is not authenticated
+  // Don't render navigation if user is not authenticated
+  if (!userInfo) {
+    return null;
   }
 
   return (
-    <nav className="bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg">
+    <nav className="bg-white/30 backdrop-blur shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -74,18 +80,17 @@ export default function Navigation() {
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                 <span className="text-purple-600 font-bold text-lg">O</span>
               </div>
-              <span className="text-white font-bold text-xl">Ocera</span>
+              <span className="text-black font-bold text-xl">Ocera</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-
             <div className="flex items-center space-x-4 text-white">
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" className="text-purple-700 bg-white/0" size="sm" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" className="text-purple-700" size="sm" asChild>
                 <Link href="/discover">Discover</Link>
               </Button>
               <Button size="sm" asChild>
@@ -93,13 +98,13 @@ export default function Navigation() {
               </Button>
               
               {/* User Profile Dropdown */}
-              {user && !loading ? (
+              {userInfo && !loading ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-white text-purple-600">
-                          {getUserInitials(user.name, user.email)}
+                          {getUserInitials(userInfo.name, userInfo.email)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -108,10 +113,10 @@ export default function Navigation() {
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">
-                          {user.name || "User"}
+                          {userInfo.name || "User"}
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          {user.email}
+                          {userInfo.email}
                         </p>
                       </div>
                     </DropdownMenuLabel>
@@ -145,13 +150,13 @@ export default function Navigation() {
           {/* Mobile Navigation */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Mobile User Profile */}
-            {user && !loading && (
+            {userInfo && !loading && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-white text-purple-600">
-                        {getUserInitials(user.name, user.email)}
+                        {getUserInitials(userInfo.name, userInfo.email)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -160,10 +165,10 @@ export default function Navigation() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user.name || "User"}
+                        {userInfo.name || "User"}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
+                        {userInfo.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -189,12 +194,12 @@ export default function Navigation() {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-gradient-to-b from-purple-600 to-pink-600 border-l-purple-400">
+              <SheetContent side="right" className="bg-gradient-to-b from-purple-600 to-pink-600 border-l-purple-200">
                 <div className="flex flex-col space-y-4 mt-8">
-                  <Button variant="ghost" asChild className="text-white hover:bg-white/20 justify-start">
+                  <Button variant="ghost" asChild className="text-black hover:bg-white/20 justify-start">
                     <Link href="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link>
                   </Button>
-                  <Button variant="ghost" asChild className="text-white hover:bg-white/20 justify-start">
+                  <Button variant="ghost" asChild className="text-black hover:bg-white/20 justify-start">
                     <Link href="/discover" onClick={() => setIsOpen(false)}>Discover</Link>
                   </Button>
                   <Button asChild className="justify-start">

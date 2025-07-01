@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
 import { 
   TrendingUp, 
   Eye,
@@ -21,6 +23,7 @@ import {
   Activity
 } from "lucide-react";
 import Navigation from "@/components/navigation";
+import { useUser } from "@/contexts/user-context";
 
 // Mock data
 const mockUser = {
@@ -64,24 +67,44 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is signed in
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      router.push("/");
-      return;
-    }
-
+  const fetchUser = async () => {
     try {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-    } catch (error) {
-      localStorage.removeItem("user");
-      router.push("/");
-      return;
-    }
+      console.log("Fetching user profile...");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-    setLoading(false);
-  }, [router]);
+      if (sessionError || !sessionData?.session?.user) {
+        router.push("/");
+        console.error("User not authenticated:", sessionError);
+        return;
+      }
+
+      const supabaseUser = sessionData.session.user;
+
+      const { data: dbUser, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", supabaseUser.id)
+        .single();
+
+      if (userError || !dbUser) {
+        console.error("Failed to fetch user profile:", userError);
+        router.push("/");
+        return;
+      }
+
+      setUser(dbUser);
+    } catch (err) {
+      console.error("Unexpected error fetching user:", err);
+      router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUser();
+}, [router]);
+
+
 
   const handleSignOut = () => {
     localStorage.removeItem("user");
@@ -105,14 +128,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
-      <Navigation />
+      <Navigation userInfo={user}/>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Welcome back, {mockUser.name}!</h1>
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
               <p className="text-purple-100">Ready to share your creativity with the world?</p>
             </div>
             <Button asChild>
@@ -121,7 +144,7 @@ export default function Dashboard() {
                 Create Character
               </Link>
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button className="text-black" variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
           </div>
@@ -137,7 +160,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-purple-600">Total Characters</p>
-                      <p className="text-3xl font-bold text-purple-900">{mockUser.characters}</p>
+                      <p className="text-3xl font-bold text-purple-900">{user.total_characters}</p>
                     </div>
                     <Users className="h-8 w-8 text-purple-500" />
                   </div>
@@ -150,7 +173,7 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm font-medium text-purple-600">Total Likes</p>
                       <p className="text-3xl font-bold text-purple-900">
-                        {mockCharacters.reduce((acc, char) => acc + char.likes, 0)}
+                        {user.total_likes}
                       </p>
                     </div>
                     <Heart className="h-8 w-8 text-purple-500" />
@@ -164,7 +187,7 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm font-medium text-purple-600">Total Views</p>
                       <p className="text-3xl font-bold text-purple-900">
-                        {mockCharacters.reduce((acc, char) => acc + char.views, 0)}
+                         {user.total_views}
                       </p>
                     </div>
                     <Eye className="h-8 w-8 text-purple-500" />
@@ -224,30 +247,30 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4 mb-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={mockUser.avatar} />
+                    <AvatarImage src={user.avatar} />
                     <AvatarFallback className="bg-purple-100 text-purple-600">
-                      {mockUser.name.split(' ').map(n => n[0]).join('')}
+                      {user.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold text-purple-900">{mockUser.name}</h3>
-                    <p className="text-sm text-purple-600">@{mockUser.username}</p>
+                    <h3 className="font-semibold text-purple-900">{user.name}</h3>
+                    <p className="text-sm text-purple-600">{user.email}</p>
                   </div>
                 </div>
 
-                <p className="text-sm text-purple-700 mb-4">{mockUser.bio}</p>
+                <p className="text-sm text-purple-700 mb-4">{user.bio}</p>
 
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-lg font-bold text-purple-900">{mockUser.followers}</p>
+                    <p className="text-lg font-bold text-purple-900">{user.followers_count}</p>
                     <p className="text-xs text-purple-600">Followers</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-purple-900">{mockUser.following}</p>
+                    <p className="text-lg font-bold text-purple-900">{user.following_count}</p>
                     <p className="text-xs text-purple-600">Following</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-purple-900">{mockUser.characters}</p>
+                    <p className="text-lg font-bold text-purple-900">{user.total_characters}</p>
                     <p className="text-xs text-purple-600">Characters</p>
                   </div>
                 </div>
