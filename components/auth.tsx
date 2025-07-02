@@ -63,7 +63,6 @@ export default function AuthForm() {
 
       const data = await res.json();
 
-<<<<<<< HEAD
       if (!data.success) {
         if (data.needsSignup) {
           setError("No account found. Please sign up.");
@@ -72,18 +71,6 @@ export default function AuthForm() {
           setError(data.error || "Sign in failed");
         }
         return;
-=======
-      if (data.success) {
-        // Store user session
-        console.log("Sign in successful:", data.user);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/dashboard");
-      } else if (data.needsSignup) {
-        setError("No account found. Please sign up first.");
-        setIsSignUp(true);
-      } else {
-        setError(data.error || "Failed to sign in");
->>>>>>> 591900ab444871bf5deda08f8ebf5e675905dcc9
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));

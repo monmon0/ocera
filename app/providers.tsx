@@ -20,12 +20,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <LoadingProvider>
-        {/* <SupabaseAuthProvider> */}
-          {/* <UserProvider> */}
+        <SupabaseAuthProvider>
             {children}
-
-          {/* </UserProvider> */}
-        {/* </SupabaseAuthProvider> */}
+        </SupabaseAuthProvider>
       </LoadingProvider>
     </ThemeProvider>
   );
