@@ -75,11 +75,13 @@ export default function CreatorHeaderWithBanner( { creator }) {
               {/* Creator Avatar - Larger */}
               <div className="relative">
                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-white">
-                  <img
-                    src={creator?.image || "/api/placeholder/128/128"}
-                    alt={creator?.name}
-                    className="w-full h-full object-cover"
+                  <AvatarImage 
+                    src={creator.image || "https://placehold.co/200x200?text=Avatar+Not+Available"}       
+                    alt={creator.name || "Creator Avatar"}
                   />
+                  <AvatarFallback className="bg-purple-200 text-purple-800 text-2xl">
+                    {creator.name ? creator.name.split(' ').map(n => n[0]).join('') : "NA"}
+                  </AvatarFallback>
                 </div>
               </div>
               

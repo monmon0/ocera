@@ -174,7 +174,7 @@ export default function Dashboard() {
         {/* Welcome Header */}
         <div className="relative rounded-2xl p-8 mb-8 text-white overflow-hidden ">
             <img 
-              src={user?.banner_img || "/api/placeholder/1200/300"}
+              src={user?.banner_img || "https://placehold.co/600x400?text=Welcome+to+Ocera"}
               alt="Creative background"
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"

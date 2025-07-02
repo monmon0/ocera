@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,7 +42,18 @@ interface NavigationProps {
 export default function Navigation({ userInfo }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (user) {
+      setUser(JSON.parse(user));
+    } else {
+      setUser(null);
+    }
+  }, []);
 
   const getUserInitials = (name: string | null | undefined, email: string | null | undefined) => {
     if (name) {
@@ -59,7 +70,7 @@ export default function Navigation({ userInfo }: NavigationProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/dashboard" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                 <span className="text-purple-600 font-bold text-lg">O</span>
               </div>

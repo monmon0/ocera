@@ -126,7 +126,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                       <Avatar>
                         <AvatarImage src={ creator?.image || "/placeholder.svg"} />
                         <AvatarFallback className="bg-purple-200 text-purple-800">
-                          {character.name} 
+                          {creator?.name} 
                         </AvatarFallback>
                       </Avatar>
                       <div>
