@@ -9,12 +9,6 @@ export async function POST(request: NextRequest) {
     const { email, name, referralCode, password } = await request.json();
 
     if (!email || !name || !referralCode || !password) {
-<<<<<<< HEAD
-      return NextResponse.json({ success: false, error: "All fields are required" }, { status: 400 });
-    }
-
-    // Check if already exists
-=======
       return NextResponse.json(
         { success: false, error: "All fields are required" },
         { status: 400 }
@@ -22,7 +16,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists in database
->>>>>>> 591900ab444871bf5deda08f8ebf5e675905dcc9
     const { data: existingUser } = await supabaseAdmin
       .from("users")
       .select("id")
