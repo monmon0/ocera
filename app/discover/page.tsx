@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
   Filter,
+  Grid,
   TrendingUp,
   Heart,
   Star,
@@ -206,62 +207,48 @@ const mockChallenges = [
 ]
 
 export default function DiscoverPage() {
-  const {
-    characters,
-    favorites,
-    searchTerm,
-    sortBy,
-    filterBy,
-    viewMode,
-    charactersLoading,
-    setSearchTerm,
-    setSortBy,
-    setFilterBy,
-    setViewMode,
-    addToFavorites,
-    removeFromFavorites,
-    fetchUserCharacters
-  } = useAppStore();
-
-  useEffect(() => {
-    fetchUserCharacters();
-  }, [fetchUserCharacters]);
-
-  const filteredAndSortedCharacters = characters
-    .filter((character) => {
-      const matchesSearch =
-        character.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        character.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-
-      const matchesFilter =
-        filterBy === "all" ||
-        (filterBy === "trending" && character.views > 500) ||
-        (filterBy === "popular" && character.likes > 100) ||
-        (filterBy === "recent" && new Date(character.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
-
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "alphabetical":
-          return a.name.localeCompare(b.name);
-        case "likes":
-          return b.likes - a.likes;
-        case "views":
-          return b.views - a.views;
-        case "recent":
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
+ 
+  const [charactersLoading, setCharactersLoading] = useState(true);
+  const [characters, setCharacters] = useState([]);
+  const [viewMode, setViewMode] = useState("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("recent");
+  const [filterBy, setFilterBy] = useState("all");  
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   const toggleFavorite = (characterId: string) => {
-    if (favorites.includes(characterId)) {
-      removeFromFavorites(characterId);
-    } else {
-      addToFavorites(characterId);
-    }
+    setFavorites((prev) =>
+      prev.includes(characterId)
+        ? prev.filter((id) => id !== characterId)
+        : [...prev, characterId]
+    );
   };
+
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('characters')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching characters:", error);
+          return;
+        }
+
+        setCharacters(data || []);
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      } finally {
+        setCharactersLoading(false);
+      }
+    };
+    fetchCharacters();
+  }, []);
+
+
+    
 
   if (charactersLoading) {
     return (
@@ -340,11 +327,11 @@ export default function DiscoverPage() {
         {/* Results */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            Showing {filteredAndSortedCharacters.length} of {characters.length} characters
+            Showing {characters.length} of {characters.length} characters
           </p>
         </div>
 
-        {filteredAndSortedCharacters.length === 0 ? (
+        {characters.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Sparkles className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -366,7 +353,7 @@ export default function DiscoverPage() {
           </Card>
         ) : (
           <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-            {filteredAndSortedCharacters.map((character) => (
+            {characters.map((character) => (
               <Card key={character.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className={viewMode === "grid" ? "p-6" : "p-4"}>
                   <div className={viewMode === "grid" ? "text-center" : "flex items-center gap-4"}>
