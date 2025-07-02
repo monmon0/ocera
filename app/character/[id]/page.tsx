@@ -26,6 +26,7 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { notFound } from 'next/navigation';
 import { supabase } from "@/lib/supabase";
+import { set } from "date-fns";
 
 
 
@@ -33,6 +34,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
   const { id } = use(params);
   const [character, setCharacter] = useState([]); // Replace with real data fetching
   const [creator, setCreator] = useState(null);
+  const [bgColor, setBgColor] = useState(""); // Default background color
   useEffect(() => {
     // This is where you would fetch the character data from your API
     // For now, we're using mock data
@@ -62,16 +64,24 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
       }
       setCharacter(data);
       setCreator(userData);
+      console.log("color:", data.profile_color);
 
+      let className = data.profile_color
+        ? `bg-[${data.profile_color}]`
+        : "bg-gradient-to-br from-purple-50 to-indigo-100";
+
+      setBgColor(data.profile_color);
+      console.log("Character data:", data);
     }
-
     fetchCharacter();
   }, []);
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-
+    <div className={`min-h-screen `}
+      style={{ backgroundColor: bgColor || "#f4f2f5" }} // Fallback color
+      >
+      {/* <p>{user.profile_color }</p> */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Back Button */}
@@ -107,7 +117,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                       <Quote className="h-5 w-5 text-purple-500" />
                       <p className="text-lg text-purple-700 italic">"{character?.quote}"</p>
                     </div>
-                    <p className="text-purple-600 text-lg">{character?.shortDescription}</p>
+                    <p className="text-purple-600 text-lg">{character?.short_description}</p>
                   </div>
 
                   {/* Info */}
@@ -234,11 +244,11 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="prose prose-purple max-w-none">
-                    {/* {character.fullDescription.split("\n\n").map((paragraph, idx) => (
+                    {character.description && character.description.split("\n\n").map((paragraph, idx) => (
                       <p key={idx} className="text-purple-700 leading-relaxed mb-4">
                         {paragraph}
                       </p>
-                    ))} */}
+                    ))}
                   </div>
 
                   <Separator className="bg-purple-200" />

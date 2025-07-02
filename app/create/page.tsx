@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/lib/supabase"
 import { uploadToCloudflare } from "@/lib/cloudflare/upload"; // adjust path
 import toast from 'react-hot-toast';
+import { profile } from "console"
 
 interface ColorPalette {
   name: string
@@ -64,6 +65,8 @@ export default function CreateOCPage() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const [profileColor, setProfileColor] = useState("");
 
   // Trigger file selection
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -187,6 +190,7 @@ export default function CreateOCPage() {
           likes_count: 0,
           views_count: 0,
           ref_sheet: referenceSheetUrl,
+          profile_color: profileColor, // New field for profile color
         },
       ])
       .select(); // Add select() to get the inserted data back
@@ -217,7 +221,7 @@ export default function CreateOCPage() {
               window.location.href = `/character/${createdCharacter.id}`;
               // Or if using React Router: navigate(`/character/${createdCharacter.id}`);
             }}
-            className="text-blue-600 hover:text-blue-800 underline text-sm font-medium transition-colors"
+            className="text-white hover:text-blue-800 underline text-sm font-medium transition-colors"
           >
             View {characterName} →
           </button>
@@ -236,28 +240,28 @@ export default function CreateOCPage() {
       );
       
       // Reset form after successful submission
-      // setCharacterName("");
-      // setQuote("");
-      // setShortDescription("");
-      // setFullDescription("");
-      // setAge("");
-      // setSpecies("");
-      // setOccupation("");
-      // setLocation("");
-      // setHeight("");
-      // setPersonalityTraits([]); 
-      // setAbilities([]);
-      // setInterests([]);
-      // setDislikes([]);
-      // setTags([]);
-      // setColorPalette([{ name: "", hex: "#000000", description: "" }]);
-      // setSelectedFiles([]);
-      // setPreviewUrls([]);
-      // setReferenceSheet(null);
-      // setReferencePreviewUrl(null);
-      // setMoodboardImage(null);
-      // setMoodboardPreviewUrl(null);
-      // setShowPreview(false); // Close preview dialog
+      setCharacterName("");
+      setQuote("");
+      setShortDescription("");
+      setFullDescription("");
+      setAge("");
+      setSpecies("");
+      setOccupation("");
+      setLocation("");
+      setHeight("");
+      setPersonalityTraits([]); 
+      setAbilities([]);
+      setInterests([]);
+      setDislikes([]);
+      setTags([]);
+      setColorPalette([{ name: "", hex: "#000000", description: "" }]);
+      setSelectedFiles([]);
+      setPreviewUrls([]);
+      setReferenceSheet(null);
+      setReferencePreviewUrl(null);
+      setMoodboardImage(null);
+      setMoodboardPreviewUrl(null);
+      setShowPreview(false); // Close preview dialog
     }
   } catch (err) {
     console.error("Unexpected error:", err);
@@ -818,6 +822,48 @@ export default function CreateOCPage() {
             <TabsContent value="palette">
               <Card className="border-purple-200 shadow-lg">
                 <CardHeader>
+                  <CardTitle className="text-purple-900">Profile Color</CardTitle>
+                  <CardDescription>Set the background color for your character profile</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+
+                      <div className="grid md:grid-cols-4 gap-4 p-4 border border-purple-200 rounded-lg">
+                        <div className="space-y-2">
+                          <Label className="text-purple-900">Hex Code</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={profileColor}
+                              onChange={(e) => setProfileColor(e.target.value)}
+                              className="w-16 h-10 border-purple-200 focus:border-purple-500 cursor-pointer"
+                            />
+                            <Input
+                              placeholder="#000000"
+                              value={profileColor}
+                              onChange={(e) => setProfileColor(e.target.value)}
+                              className="border-purple-200 focus:border-purple-500 font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+
+                  {/* <Button
+                    type="button"
+                    onClick={addColorTopalette}
+                    variant="outline"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Color
+                  </Button> */}
+
+                  {/* Color Preview */}
+                 
+                </CardContent>
+
+                <CardHeader>
                   <CardTitle className="text-purple-900">Color Palette</CardTitle>
                   <CardDescription>Define the colors that represent your character</CardDescription>
                 </CardHeader>
@@ -967,7 +1013,7 @@ export default function CreateOCPage() {
                       <p className="text-lg text-purple-700 italic">"{quote}"</p>
                     </div>
                   )}
-                  {shortDescription && <p className="text-purple-600 text-lg">{shortDescription}</p>}
+                  {/* {shortDescription && <p className="text-purple-600 text-lg">{shortDescription}</p>} */}
                 </div>
 
                 {/* Quick Stats */}

@@ -6,7 +6,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const characterName = "Luna Nightshade" // This would come from your database
 
   return {
-    title: `${characterName} - Character Profile | Ocera`,
+    title: `${params.id} - Character Profile | Ocera`,
     description: `Explore ${characterName}, an original character created by the Ocera community. View detailed character information, gallery, reference sheets, and more.`,
   }
 }
