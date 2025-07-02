@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, MessageCircle, Bookmark, Share2, Quote } from 'lucide-react';
+import CuteLoadingComponent from './loading';
 
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-lg ${className}`}>{children}</div>
@@ -50,7 +51,7 @@ export default function CreatorHeaderWithBanner( { creator }) {
     if (!creator) {
     return (
       <div className="w-full max-w-6xl mx-auto p-8">
-        <p className="text-center text-gray-500">Loading character and creator data...</p>
+        <CuteLoadingComponent />
       </div>
     );
   }

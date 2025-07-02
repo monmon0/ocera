@@ -288,7 +288,7 @@ export default function Dashboard() {
                   </Button>
                 </Link>
                 <Link href={`/profile/${user.id}`}>
-                  <Button  variant = "ghost" className="w-full mt-4 bg-white/0 text-purple-300 hover:bg-purple-700">
+                  <Button  variant = "ghost" className="w-full mt-4 bg-white/0 text-purple-700 hover:bg-purple-300">
                     View My Profile
                   </Button>
                 </Link>

@@ -659,9 +659,9 @@ export default function DiscoverPage() {
                                     {oc.name}
                                   </h3>
                                 </Link>
-                                <Link href={`/profile/${oc.creator.username}`}>
+                                <Link href={`/profile/${oc.id}`}>
                                   <p className="text-purple-600 hover:text-purple-800 cursor-pointer">
-                                    by {oc.creator.displayName}
+                                    by {oc.id}
                                   </p>
                                 </Link>
                               </div>

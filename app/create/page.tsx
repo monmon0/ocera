@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { uploadToCloudflare } from "@/lib/cloudflare/upload"
 import { supabase } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
+import CuteLoadingComponent from "@/components/loading"
 
 interface ColorPalette {
   name: string
@@ -130,6 +131,7 @@ export default function CreateOCPage() {
 
   const [moodboardImage, setMoodboardImage] = useState<File | null>(null);
   const [moodboardPreviewUrl, setMoodboardPreviewUrl] = useState<string | null>(null);
+  const [isCreatingChar, setIsCreatingChar] = useState<Boolean>(false)
 
   const handleMoodboardUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,8 +148,8 @@ export default function CreateOCPage() {
 
 
  const handleSubmit = async () => {
-  if (isLoading) return; // Prevent multiple clicks
-  setIsLoading(true);
+  if (isCreatingChar) return; // Prevent multiple clicks
+  setIsCreatingChar(true);
 
   try {
     const uploadedImageUrls = await Promise.all(
@@ -275,21 +277,9 @@ export default function CreateOCPage() {
       icon: '❌',
     });
   } finally {
-    setIsLoading(false);
+    setIsCreatingChar(false)
   }
 };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
 
   useEffect(() => {
@@ -315,7 +305,7 @@ export default function CreateOCPage() {
             </p>
           </div>
 
-          <Tabs defaultValue="basic" className="w-full">
+         {!isCreatingChar && <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-5 bg-purple-100 mb-8">
               <TabsTrigger value="basic" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                 <User className="h-4 w-4 mr-1" />
@@ -969,7 +959,13 @@ export default function CreateOCPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
+          </Tabs>} 
+
+          {isCreatingChar && 
+            <div className="">
+             <CuteLoadingComponent />
+            </div>
+          }
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center mt-8 pt-6 border-t border-purple-200">
