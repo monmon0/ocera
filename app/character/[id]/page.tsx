@@ -1,9 +1,12 @@
+'use client';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import CharacterHeader from "@/components/character-header"
+import { use } from 'react';
 import {
   Heart,
   MessageCircle,
@@ -20,152 +23,139 @@ import {
 import Navigation from "@/components/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useState, useEffect } from "react"
+import { notFound } from 'next/navigation';
+import { supabase } from "@/lib/supabase";
+import { set } from "date-fns";
 
-// Mock character data - in real app this would come from database
-const mockCharacter = {
-  id: "1",
-  name: "Luna Nightshade",
-  creator: {
-    username: "ArtistAlice",
-    displayName: "Alice Chen",
-    avatar: "/placeholder.svg",
-    followers: 1250,
-    isFollowing: false,
-  },
-  quote: "Art is the window to the soul, even for the undead.",
-  shortDescription: "A 200-year-old vampire who runs an underground art gallery.",
-  fullDescription: `Luna Nightshade is a captivating vampire who has walked the earth for over two centuries. Born in 1823 in Victorian London, she was turned during the height of the Romantic era, which deeply influenced her artistic sensibilities.
 
-After decades of wandering, Luna settled in modern-day San Francisco where she established "Crimson Canvas," an exclusive underground art gallery that operates only during the midnight hours. Her gallery has become a sanctuary for supernatural beings and mortal artists alike, bridging two worlds through the universal language of art.
 
-Luna possesses an otherworldly elegance, with porcelain skin that seems to glow in moonlight and eyes that shift between deep violet and silver depending on her mood. Her long, raven-black hair often cascades over her shoulders like liquid shadow, and she favors Victorian-inspired fashion with modern gothic touches.
+export default function CharacterPage({ params }: { params: { id: string } }) {
+  const { id } = use(params);
+  const [character, setCharacter] = useState([]); // Replace with real data fetching
+  const [creator, setCreator] = useState(null);
+  const [bgColor, setBgColor] = useState(""); // Default background color
+  useEffect(() => {
+    // This is where you would fetch the character data from your API
+    // For now, we're using mock data
 
-Despite her vampiric nature, Luna has retained much of her humanity through her passion for art. She's known for her incredible patience when mentoring young artists, though she can be fiercely protective of those she cares about. Her supernatural abilities include enhanced senses, superhuman strength, and the ability to move with ghost-like silence.`,
+    const fetchCharacter = async () => {
+      const { data, error } = await supabase
+        .from("characters")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-  // Character Details
-  age: "200+ years (appears 25)",
-  species: "Vampire",
-  occupation: "Art Gallery Owner & Curator",
-  location: "San Francisco, CA",
-  height: "5'7\"",
-  personality: ["Elegant", "Mysterious", "Passionate", "Protective", "Patient", "Artistic"],
-  abilities: ["Enhanced Senses", "Superhuman Strength", "Silent Movement", "Art Appraisal", "Night Vision"],
-  interests: ["Renaissance Art", "Classical Music", "Moonlit Walks", "Red Wine", "Antique Books"],
-  dislikes: ["Sunlight", "Garlic", "Crude Behavior", "Modern Pop Music", "Rushed Decisions"],
+      if (error || !data) {
+        console.error('Character not found:', error);
+        return notFound();
+      }
+      // console.log("Character data fetched:", data);
+      // console.log("Character ID:", charID);
+       const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, image, name, followers_count, banner_img")
+        .eq("id", data.user_id)
+        .single();
 
-  // Media
-  images: [
-    "/placeholder.svg?height=600&width=400",
-    "/placeholder.svg?height=400&width=400",
-    "/placeholder.svg?height=500&width=400",
-    "/placeholder.svg?height=400&width=600",
-  ],
-  refSheet: "/placeholder.svg?height=800&width=1200",
-  moodboard: [
-    "/placeholder.svg?height=300&width=300",
-    "/placeholder.svg?height=300&width=300",
-    "/placeholder.svg?height=300&width=300",
-    "/placeholder.svg?height=300&width=300",
-    "/placeholder.svg?height=300&width=300",
-    "/placeholder.svg?height=300&width=300",
-  ],
-  palette: [
-    { name: "Midnight Purple", hex: "#2D1B69", description: "Her signature dress color" },
-    { name: "Ethereal Violet", hex: "#8B5CF6", description: "Eye color when calm" },
-    { name: "Mystic Lavender", hex: "#C084FC", description: "Magical aura" },
-    { name: "Pale Moonlight", hex: "#E9D5FF", description: "Skin tone" },
-    { name: "Crimson Blood", hex: "#DC2626", description: "Accent color" },
-    { name: "Shadow Black", hex: "#1F2937", description: "Hair color" },
-  ],
+      if (userError || !userData) {
+        console.error('User not found:', userError);      
+        return notFound();
+      }
+      setCharacter(data);
+      setCreator(userData);
+      console.log("color:", data.profile_color);
 
-  // Engagement
-  likesCount: 342,
-  comments: 89,
-  bookmarks: 156,
-  shares: 23,
+      let className = data.profile_color
+        ? `bg-[${data.profile_color}]`
+        : "bg-gradient-to-br from-purple-50 to-indigo-100";
 
-  // Meta
-  createdAt: "2024-01-15",
-  lastUpdated: "2024-01-20",
-  tags: ["vampire", "gothic", "art", "supernatural", "elegant", "victorian"],
-}
+      setBgColor(data.profile_color);
+      console.log("Character data:", data);
+    }
+    fetchCharacter();
+  }, []);
 
-export default function CharacterPage() {
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
-
+    <div className={`min-h-screen `}
+      style={{ backgroundColor: bgColor || "#f4f2f5" }} // Fallback color
+      >
+      {/* <p>{user.profile_color }</p> */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Back Button */}
-          <Link href={`/profile/${mockCharacter.creator.username}`}>
+          <Link href={`/dashboard`}>
             <Button variant="ghost" className="mb-6 text-purple-700 hover:text-purple-900">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to {mockCharacter.creator.displayName}'s Profile
+              Back to Dashboard
             </Button>
           </Link>
 
           {/* Character Header */}
+          <CharacterHeader creator={creator} />
           <Card className="border-purple-200 shadow-lg mb-8">
             <CardContent className="p-8">
               <div className="grid lg:grid-cols-3 gap-8">
                 {/* Main Character Image */}
                 <div className="lg:col-span-1">
-                  <Image
-                    src={mockCharacter.images[0] || "/placeholder.svg"}
-                    alt={mockCharacter.name}
-                    width={400}
-                    height={600}
-                    className="w-full rounded-lg shadow-lg object-cover"
-                  />
-                </div>
+                <Image
+                  src={character.char_img && character.char_img.length > 0 ? character.char_img[0] : "/placeholder.svg"}
+                  alt={character.name}
+                  width={400}
+                  height={400}
+                  className="w-full aspect-square rounded-lg shadow-lg object-cover"
+                />
+              </div>
+
 
                 {/* Character Info */}
                 <div className="lg:col-span-2 space-y-6">
                   <div>
-                    <h1 className="text-4xl font-bold text-purple-900 mb-2">{mockCharacter.name}</h1>
+                    <h1 className="text-4xl font-bold text-purple-900 mb-2">{character?.name}</h1>
                     <div className="flex items-center gap-2 mb-4">
                       <Quote className="h-5 w-5 text-purple-500" />
-                      <p className="text-lg text-purple-700 italic">"{mockCharacter.quote}"</p>
+                      <p className="text-lg text-purple-700 italic">"{character?.quote}"</p>
                     </div>
-                    <p className="text-purple-600 text-lg">{mockCharacter.shortDescription}</p>
+                    <p className="text-purple-600 text-lg">{character?.short_description}</p>
                   </div>
 
-                  {/* Creator Info */}
+                  {/* Info */}
                   <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={mockCharacter.creator.avatar || "/placeholder.svg"} />
+                        <AvatarImage src={ creator?.image || "/placeholder.svg"} />
                         <AvatarFallback className="bg-purple-200 text-purple-800">
-                          {mockCharacter.creator.displayName[0]}
+                          {character.name} 
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-purple-900">Created by {mockCharacter.creator.displayName}</p>
+                        <p className="font-semibold text-purple-900">Created by {creator?.name || ""}</p>
                         <p className="text-sm text-purple-600">
-                          @{mockCharacter.creator.username} • {mockCharacter.creator.followers} followers
+                          @
+                          {creator?.name.replace(/\s+/g, "").toLowerCase()} • {creator?.followers_count || 0} followers
                         </p>
                       </div>
                     </div>
-                    <Button className="bg-purple-600 hover:bg-purple-700 text-white">Follow Creator</Button>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white">Follow</Button>
                   </div>
 
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-white rounded-lg border border-purple-200">
-                      <div className="font-bold text-purple-900">{mockCharacter.age}</div>
+                      <div className="font-bold text-purple-900">{character.age}</div>
                       <div className="text-sm text-purple-600">Age</div>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg border border-purple-200">
-                      <div className="font-bold text-purple-900">{mockCharacter.species}</div>
+                      <div className="font-bold text-purple-900">{character.species}</div>
                       <div className="text-sm text-purple-600">Species</div>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg border border-purple-200">
-                      <div className="font-bold text-purple-900">{mockCharacter.height}</div>
+                      <div className="font-bold text-purple-900">{character.height}</div>
                       <div className="text-sm text-purple-600">Height</div>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg border border-purple-200">
-                      <div className="font-bold text-purple-900">{mockCharacter.location}</div>
+                      <div className="font-bold text-purple-900">{character.location}</div>
                       <div className="text-sm text-purple-600">Location</div>
                     </div>
                   </div>
@@ -179,7 +169,7 @@ export default function CharacterPage() {
                         className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
                       >
                         <Heart className="h-4 w-4 mr-1" />
-                        {mockCharacter.likesCount}
+                        {character.likes_count}
                       </Button>
                       <Button
                         variant="ghost"
@@ -187,7 +177,7 @@ export default function CharacterPage() {
                         className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
                       >
                         <MessageCircle className="h-4 w-4 mr-1" />
-                        {mockCharacter.comments}
+                        {/* {character.comments} */}
                       </Button>
                       <Button
                         variant="ghost"
@@ -195,7 +185,7 @@ export default function CharacterPage() {
                         className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
                       >
                         <Bookmark className="h-4 w-4 mr-1" />
-                        {mockCharacter.bookmarks}
+                        {/* {character.bookmarks} */}
                       </Button>
                     </div>
                     <Button
@@ -254,7 +244,7 @@ export default function CharacterPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="prose prose-purple max-w-none">
-                    {mockCharacter.fullDescription.split("\n\n").map((paragraph, idx) => (
+                    {character.description && character.description.split("\n\n").map((paragraph, idx) => (
                       <p key={idx} className="text-purple-700 leading-relaxed mb-4">
                         {paragraph}
                       </p>
@@ -267,7 +257,7 @@ export default function CharacterPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900 mb-3">Personality Traits</h3>
                       <div className="flex flex-wrap gap-2">
-                        {mockCharacter.personality.map((trait, idx) => (
+                        {character.personality_traits && character.personality_traits.map((trait, idx) => (
                           <Badge key={idx} variant="secondary" className="bg-purple-100 text-purple-700">
                             {trait}
                           </Badge>
@@ -278,7 +268,7 @@ export default function CharacterPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900 mb-3">Abilities</h3>
                       <div className="flex flex-wrap gap-2">
-                        {mockCharacter.abilities.map((ability, idx) => (
+                        {character.abilities && character.abilities.map((ability, idx) => (
                           <Badge key={idx} variant="outline" className="border-purple-300 text-purple-700">
                             {ability}
                           </Badge>
@@ -291,7 +281,7 @@ export default function CharacterPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900 mb-3">Interests</h3>
                       <ul className="space-y-1">
-                        {mockCharacter.interests.map((interest, idx) => (
+                        {character.interests && character.interests.map((interest, idx) => (
                           <li key={idx} className="text-purple-600 flex items-center gap-2">
                             <div className="w-2 h-2 bg-purple-400 rounded-full" />
                             {interest}
@@ -303,7 +293,7 @@ export default function CharacterPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-purple-900 mb-3">Dislikes</h3>
                       <ul className="space-y-1">
-                        {mockCharacter.dislikes.map((dislike, idx) => (
+                        {character.dislikes && character.dislikes.map((dislike, idx) => (
                           <li key={idx} className="text-purple-600 flex items-center gap-2">
                             <div className="w-2 h-2 bg-red-400 rounded-full" />
                             {dislike}
@@ -324,11 +314,11 @@ export default function CharacterPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockCharacter.images.map((img, idx) => (
+                    {character.char_img && character.char_img.length > 0 && character.char_img.map((img, idx) => (
                       <div key={idx} className="group relative">
                         <Image
                           src={img || "/placeholder.svg"}
-                          alt={`${mockCharacter.name} ${idx + 1}`}
+                          alt={`${character.name} ${idx + 1}`}
                           width={400}
                           height={400}
                           className="w-full rounded-lg object-cover shadow-md group-hover:shadow-lg transition-shadow"
@@ -350,8 +340,8 @@ export default function CharacterPage() {
                 <CardContent>
                   <div className="text-center">
                     <Image
-                      src={mockCharacter.refSheet || "/placeholder.svg"}
-                      alt={`${mockCharacter.name} Reference Sheet`}
+                      src={character.ref_sheet || "/placeholder.svg"}
+                      alt={`${character.name} Reference Sheet`}
                       width={1200}
                       height={800}
                       className="w-full rounded-lg shadow-lg"
@@ -369,7 +359,7 @@ export default function CharacterPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockCharacter.palette.map((color, idx) => (
+                    {character.color_palette && character.color_palette.map((color, idx) => (
                       <div key={idx} className="text-center p-4 bg-white rounded-lg border border-purple-200">
                         <div className="w-full h-24 rounded-lg shadow-md mb-4" style={{ backgroundColor: color.hex }} />
                         <h4 className="font-semibold text-purple-900 mb-1">{color.name}</h4>
@@ -389,17 +379,15 @@ export default function CharacterPage() {
                   <CardTitle className="text-purple-900">Character Moodboard</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {mockCharacter.moodboard.map((img, idx) => (
+                  <div className="content-center flex justify-center sm:m-20 md:m-20">
                       <Image
-                        key={idx}
-                        src={img || "/placeholder.svg"}
-                        alt={`${mockCharacter.name} mood ${idx + 1}`}
+                        src={character?.moodboard || "/placeholder.svg"}
+                        alt={character?.moodboard || "moodboard"}
                         width={300}
                         height={300}
                         className="w-full rounded-lg object-cover shadow-md hover:shadow-lg transition-shadow"
                       />
-                    ))}
+
                   </div>
                 </CardContent>
               </Card>
@@ -416,41 +404,41 @@ export default function CharacterPage() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Full Name</span>
-                        <span className="text-purple-700">{mockCharacter.name}</span>
+                        <span className="text-purple-700">{character.name}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Age</span>
-                        <span className="text-purple-700">{mockCharacter.age}</span>
+                        <span className="text-purple-700">{character.age}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Species</span>
-                        <span className="text-purple-700">{mockCharacter.species}</span>
+                        <span className="text-purple-700">{character.species}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Height</span>
-                        <span className="text-purple-700">{mockCharacter.height}</span>
+                        <span className="text-purple-700">{character.height}</span>
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Occupation</span>
-                        <span className="text-purple-700">{mockCharacter.occupation}</span>
+                        {/* <span className="text-purple-700">{character.occupation}</span> */}
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Location</span>
-                        <span className="text-purple-700">{mockCharacter.location}</span>
+                        <span className="text-purple-700">{character.location}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Created</span>
                         <span className="text-purple-700">
-                          {new Date(mockCharacter.createdAt).toLocaleDateString()}
+                          {new Date(character.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                         <span className="font-medium text-purple-900">Last Updated</span>
                         <span className="text-purple-700">
-                          {new Date(mockCharacter.lastUpdated).toLocaleDateString()}
+                          {new Date(character.lastUpdated).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -461,7 +449,7 @@ export default function CharacterPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-purple-900 mb-3">Tags</h3>
                     <div className="flex flex-wrap gap-2">
-                      {mockCharacter.tags.map((tag, idx) => (
+                      {character.tags && character.tags.map((tag, idx) => (
                         <Badge key={idx} variant="outline" className="border-purple-300 text-purple-700">
                           #{tag}
                         </Badge>

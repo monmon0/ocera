@@ -64,7 +64,6 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -122,7 +121,7 @@ export default function EditProfilePage() {
                         className="border-purple-200 focus:border-purple-500"
                       />
                     </div>
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="username" className="text-purple-900">
                         Username
                       </Label>
@@ -133,7 +132,7 @@ export default function EditProfilePage() {
                         className="border-purple-200 focus:border-purple-500"
                         placeholder="@username"
                       />
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Bio */}
@@ -288,22 +287,22 @@ export default function EditProfilePage() {
                     <Switch checked={isProfilePublic} onCheckedChange={setIsProfilePublic} />
                   </div>
 
-                  <Separator className="bg-purple-200" />
+                  {/* <Separator className="bg-purple-200" /> */}
 
-                  <div className="flex items-center justify-between">
+                  {/* <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-purple-900">Allow Messages</Label>
                       <p className="text-sm text-purple-600">Let other users send you direct messages</p>
                     </div>
                     <Switch checked={allowMessages} onCheckedChange={setAllowMessages} />
-                  </div>
+                  </div> */}
 
                   <Separator className="bg-purple-200" />
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label className="text-purple-900">Show Email</Label>
-                      <p className="text-sm text-purple-600">Display your email on your public profile</p>
+                      <Label className="text-purple-900">Public OC</Label>
+                      <p className="text-sm text-purple-600">Allow other people to discover your OC</p>
                     </div>
                     <Switch checked={showEmail} onCheckedChange={setShowEmail} />
                   </div>
@@ -311,7 +310,7 @@ export default function EditProfilePage() {
               </Card>
 
               {/* Profile Theme */}
-              <Card className="border-purple-200 shadow-lg">
+              {/* <Card className="border-purple-200 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-purple-900">Profile Theme</CardTitle>
                   <CardDescription>Customize your profile appearance</CardDescription>
@@ -351,7 +350,7 @@ export default function EditProfilePage() {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Profile Stats */}
               <Card className="border-purple-200 shadow-lg">

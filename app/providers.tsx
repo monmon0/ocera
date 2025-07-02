@@ -1,4 +1,3 @@
-
 "use client";
 
 import { ThemeProvider } from "@/components/theme-provider";
@@ -10,6 +9,8 @@ function AppDataInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+import { LoadingProvider } from "@/contexts/loading-context";
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
@@ -18,11 +19,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <SupabaseAuthProvider>
-        <AppDataInitializer>
-          {children}
-        </AppDataInitializer>
-      </SupabaseAuthProvider>
+      <LoadingProvider>
+        {/* <SupabaseAuthProvider> */}
+          {/* <UserProvider> */}
+            {children}
+
+          {/* </UserProvider> */}
+        {/* </SupabaseAuthProvider> */}
+      </LoadingProvider>
     </ThemeProvider>
   );
 }

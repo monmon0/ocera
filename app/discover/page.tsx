@@ -1,17 +1,209 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Search, Grid, List, TrendingUp, Star, Eye, MessageCircle, Sparkles, Bookmark, Users } from "lucide-react";
-import Navigation from "@/components/navigation";
-import { useAppStore } from "@/stores";
-import Link from "next/link";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Search,
+  Filter,
+  TrendingUp,
+  Heart,
+  Star,
+  Users,
+  Calendar,
+  Eye,
+  Grid3X3,
+  List,
+  Sparkles,
+  Trophy,
+  FlameIcon as Fire,
+  Zap,
+  Crown,
+  UserPlus,
+  Bookmark,
+} from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase";
+
+const mockTrendingOCs = [
+  {
+    id: 1,
+    name: "Aria Moonweaver",
+    creator: { username: "MysticArt", displayName: "Luna Martinez", avatar: "/placeholder.svg" },
+    description: "A celestial mage who weaves moonlight into powerful spells and protects the night realm.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 1247,
+    views: 5632,
+    tags: ["fantasy", "magic", "celestial", "mage"],
+    trending: true,
+    featured: true,
+    createdAt: "2024-01-15",
+  },
+  {
+    id: 2,
+    name: "Kai Stormborn",
+    creator: { username: "ElementalMage", displayName: "Alex Chen", avatar: "/placeholder.svg" },
+    description: "Lightning elemental warrior from the Storm Peaks, master of thunder and wind.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 892,
+    views: 3421,
+    tags: ["elemental", "warrior", "lightning", "storm"],
+    trending: true,
+    featured: false,
+    createdAt: "2024-01-14",
+  },
+  {
+    id: 3,
+    name: "Nova Starlight",
+    creator: { username: "CosmicCreator", displayName: "Sarah Kim", avatar: "/placeholder.svg" },
+    description: "Cosmic entity who travels between galaxies, spreading stardust and wonder.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 1156,
+    views: 4789,
+    tags: ["cosmic", "space", "entity", "stars"],
+    trending: true,
+    featured: true,
+    createdAt: "2024-01-13",
+  },
+  {
+    id: 4,
+    name: "Ember Roseheart",
+    creator: { username: "FloralFire", displayName: "Maya Rodriguez", avatar: "/placeholder.svg" },
+    description: "Fire fairy who tends to magical gardens, balancing destruction and growth.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 734,
+    views: 2156,
+    tags: ["fairy", "fire", "nature", "garden"],
+    trending: false,
+    featured: false,
+    createdAt: "2024-01-12",
+  },
+  {
+    id: 5,
+    name: "Zephyr Nightwind",
+    creator: { username: "ShadowArtist", displayName: "Marcus Chen", avatar: "/placeholder.svg" },
+    description: "Shadow assassin who moves like the wind, protector of the innocent.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 623,
+    views: 1987,
+    tags: ["assassin", "shadow", "wind", "protector"],
+    trending: false,
+    featured: false,
+    createdAt: "2024-01-11",
+  },
+  {
+    id: 6,
+    name: "Crystal Dreamweaver",
+    creator: { username: "DreamArtist", displayName: "Elena Rodriguez", avatar: "/placeholder.svg" },
+    description: "Dream guardian who protects sleeping minds from nightmares using crystal magic.",
+    image: "/placeholder.svg?height=300&width=300",
+    likes: 945,
+    views: 3654,
+    tags: ["dream", "crystal", "guardian", "magic"],
+    trending: false,
+    featured: true,
+    createdAt: "2024-01-10",
+  },
+]
+
+const mockTrendingCreators = [
+  {
+    username: "FantasyMaster",
+    displayName: "Elena Rodriguez",
+    avatar: "/placeholder.svg",
+    followers: 5200,
+    ocs: 23,
+    totalLikes: 15420,
+    specialties: ["Fantasy", "Digital Art", "Character Design"],
+    isFollowing: false,
+    featured: true,
+  },
+  {
+    username: "DragonArtist",
+    displayName: "Marcus Chen",
+    avatar: "/placeholder.svg",
+    followers: 4100,
+    ocs: 18,
+    totalLikes: 12890,
+    specialties: ["Dragons", "Mythology", "Concept Art"],
+    isFollowing: false,
+    featured: false,
+  },
+  {
+    username: "MysticCreator",
+    displayName: "Sarah Kim",
+    avatar: "/placeholder.svg",
+    followers: 3800,
+    ocs: 31,
+    totalLikes: 11750,
+    specialties: ["Magic", "Fantasy", "Storytelling"],
+    isFollowing: true,
+    featured: true,
+  },
+  {
+    username: "ColorMaster",
+    displayName: "David Park",
+    avatar: "/placeholder.svg",
+    followers: 2100,
+    ocs: 12,
+    totalLikes: 8920,
+    specialties: ["Color Theory", "Digital Art", "Teaching"],
+    isFollowing: false,
+    featured: false,
+  },
+]
+
+const mockTags = [
+  { name: "fantasy", count: 1247, trending: true },
+  { name: "magic", count: 892, trending: true },
+  { name: "dragon", count: 756, trending: false },
+  { name: "elemental", count: 634, trending: true },
+  { name: "warrior", count: 523, trending: false },
+  { name: "celestial", count: 445, trending: true },
+  { name: "gothic", count: 398, trending: false },
+  { name: "cyberpunk", count: 367, trending: false },
+  { name: "fairy", count: 334, trending: false },
+  { name: "demon", count: 298, trending: false },
+]
+
+const mockChallenges = [
+  {
+    id: 1,
+    title: "Elemental Warriors",
+    description: "Create an OC based on one of the four elements: Fire, Water, Earth, or Air",
+    participants: 156,
+    submissions: 89,
+    daysLeft: 3,
+    prize: "Featured on homepage",
+    image: "/placeholder.svg?height=200&width=300",
+  },
+  {
+    id: 2,
+    title: "Mythical Creatures",
+    description: "Design a character inspired by mythical creatures from any culture",
+    participants: 234,
+    submissions: 167,
+    daysLeft: 8,
+    prize: "Custom badge + 1000 points",
+    image: "/placeholder.svg?height=200&width=300",
+  },
+  {
+    id: 3,
+    title: "Steampunk Adventures",
+    description: "Create a steampunk-inspired character with unique gadgets and style",
+    participants: 98,
+    submissions: 45,
+    daysLeft: 12,
+    prize: "Art supplies package",
+    image: "/placeholder.svg?height=200&width=300",
+  },
+]
 
 export default function DiscoverPage() {
   const {
@@ -86,7 +278,6 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-      <Navigation />
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">

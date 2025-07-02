@@ -4,6 +4,9 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  ::-webkit-scrollbar {
+      display: none;
+    }
 }
 
 @layer utilities {
@@ -90,5 +93,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    
   }
+  
 }
