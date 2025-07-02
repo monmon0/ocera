@@ -13,10 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X, Upload, Palette, FileText, User, Camera, Sparkles, Save, Eye, Quote, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+<<<<<<< HEAD
 import { supabase } from "@/lib/supabase"
 import { uploadToCloudflare } from "@/lib/cloudflare/upload"; // adjust path
 import toast from 'react-hot-toast';
 import { profile } from "console"
+=======
+import { useAppStore } from "@/stores"
+>>>>>>> 591900ab444871bf5deda08f8ebf5e675905dcc9
 
 interface ColorPalette {
   name: string

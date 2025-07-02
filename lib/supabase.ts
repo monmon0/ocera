@@ -1,8 +1,7 @@
-
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Create a dummy client for development when env vars are missing
@@ -42,8 +41,8 @@ const createDummyClient = () => {
 let supabaseClient: any;
 let supabaseAdminClient: any;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Supabase environment variables missing. Using dummy client for development.");
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'your-supabase-project-url' || supabaseAnonKey === 'your-supabase-anon-key') {
+  console.warn("Supabase environment variables missing or using placeholder values. Using dummy client for development.");
   const dummyClient = createDummyClient();
   supabaseClient = dummyClient;
   supabaseAdminClient = dummyClient;

@@ -9,10 +9,20 @@ export async function POST(request: NextRequest) {
     const { email, name, referralCode, password } = await request.json();
 
     if (!email || !name || !referralCode || !password) {
+<<<<<<< HEAD
       return NextResponse.json({ success: false, error: "All fields are required" }, { status: 400 });
     }
 
     // Check if already exists
+=======
+      return NextResponse.json(
+        { success: false, error: "All fields are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists in database
+>>>>>>> 591900ab444871bf5deda08f8ebf5e675905dcc9
     const { data: existingUser } = await supabaseAdmin
       .from("users")
       .select("id")
@@ -64,6 +74,7 @@ export async function POST(request: NextRequest) {
     // Send email (you implement sendVerificationEmail)
     await sendVerificationEmail(email, token);
 
+<<<<<<< HEAD
     return NextResponse.json({ success: true, message: "Check your email to verify account." });
   } catch (err) {
     console.error("Signup error:", err);
@@ -182,3 +193,34 @@ export async function POST(request: NextRequest) {
 //     );
 //   }
 // }
+=======
+      if (updateError) {
+        console.error("Referral count update error:", updateError);
+        // This is less critical, so we won't rollback for this
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Account created successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+        },
+      });
+    } catch (transactionError) {
+      console.error("Transaction error:", transactionError);
+      return NextResponse.json(
+        { success: false, error: "Failed to create account" },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("Error creating account:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+>>>>>>> 591900ab444871bf5deda08f8ebf5e675905dcc9
