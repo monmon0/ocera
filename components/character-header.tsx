@@ -1,14 +1,5 @@
 import React from 'react';
-import { Heart, MessageCircle, Bookmark, Share2, Quote } from 'lucide-react';
 import CuteLoadingComponent from './loading';
-
-const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-lg ${className}`}>{children}</div>
-);
-
-const CardContent = ({ children, className = "" }) => (
-  <div className={className}>{children}</div>
-);
 
 const Button = ({ children, className = "", variant = "default", size = "default", ...props }) => {
   const baseClasses = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background";
@@ -80,9 +71,6 @@ export default function CreatorHeaderWithBanner( { creator }) {
                     src={creator.image || "https://placehold.co/200x200?text=Avatar+Not+Available"}       
                     alt={creator.name || "Creator Avatar"}
                   />
-                  <AvatarFallback className="bg-purple-200 text-purple-800 text-2xl">
-                    {creator.name ? creator.name.split(' ').map(n => n[0]).join('') : "NA"}
-                  </AvatarFallback>
                 </div>
               </div>
               
@@ -92,7 +80,7 @@ export default function CreatorHeaderWithBanner( { creator }) {
                   {creator?.name}
                 </h2>
                 <p className="text-white/90 text-lg drop-shadow-md">
-                  @{creator?.name.replace(/\s+/g, "").toLowerCase()} • {creator?.followers_count?.toLocaleString()} followers
+                  @{creator.username} • {creator?.followers_count?.toLocaleString()} followers
                 </p>
               </div>
               

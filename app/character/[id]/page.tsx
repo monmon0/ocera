@@ -54,7 +54,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
       // console.log("Character ID:", charID);
        const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("id, image, name, followers_count, banner_img")
+        .select("id, image, name, username, followers_count, banner_img")
         .eq("id", data.user_id)
         .single();
 
@@ -133,7 +133,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                         <p className="font-semibold text-purple-900">Created by {creator?.name || ""}</p>
                         <p className="text-sm text-purple-600">
                           @
-                          {creator?.name.replace(/\s+/g, "").toLowerCase()} • {creator?.followers_count || 0} followers
+                          {creator?.username} • {creator?.followers_count || 0} followers
                         </p>
                       </div>
                     </div>
@@ -321,6 +321,7 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                           alt={`${character.name} ${idx + 1}`}
                           width={400}
                           height={400}
+                          loading="lazy"
                           className="w-full rounded-lg object-cover shadow-md group-hover:shadow-lg transition-shadow"
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg" />
@@ -342,9 +343,9 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                     <Image
                       src={character.ref_sheet || "/placeholder.svg"}
                       alt={`${character.name} Reference Sheet`}
-                      width={1200}
-                      height={800}
-                      className="w-full rounded-lg shadow-lg"
+                      width={500}
+                      height={500}
+                      className="max-w-md mx-auto rounded-lg shadow-lg"
                     />
                   </div>
                 </CardContent>
@@ -379,15 +380,14 @@ export default function CharacterPage({ params }: { params: { id: string } }) {
                   <CardTitle className="text-purple-900">Character Moodboard</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="content-center flex justify-center sm:m-20 md:m-20">
-                      <Image
-                        src={character?.moodboard || "/placeholder.svg"}
-                        alt={character?.moodboard || "moodboard"}
-                        width={300}
-                        height={300}
-                        className="w-full rounded-lg object-cover shadow-md hover:shadow-lg transition-shadow"
-                      />
-
+                  <div className="text-center">
+                    <Image
+                      src={character?.moodboard || "/placeholder.svg"}
+                      alt={character?.moodboard || "moodboard"}
+                      width={300}
+                      height={300}
+                      className="max-w-md mx-auto rounded-lg object-cover shadow-md hover:shadow-lg transition-shadow"
+                    />
                   </div>
                 </CardContent>
               </Card>

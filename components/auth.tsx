@@ -14,6 +14,7 @@ export default function AuthForm() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [username, setUsername] = useState("")
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -28,7 +29,7 @@ export default function AuthForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, referralCode, password }),
+        body: JSON.stringify({ email, name, referralCode, password, username }),
       });
 
       const data = await res.json();
@@ -138,17 +139,31 @@ export default function AuthForm() {
             </div>
 
             {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="referralCode" className="text-white">Referral Code</Label>
-                <Input
-                  id="referralCode"
-                  type="text"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  required
-                  placeholder="WELCOME2024"
-                  className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
-                />
+              <div className="">
+                 <div className="space-y-2 mb-4">
+                  <Label htmlFor="username" className="text-white">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    placeholder="@cool_username"
+                    className="bg-white/10 border-purple-300/30 text-white placeholder:text-purple-300"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="referralCode" className="text-white">Referral Code</Label>
+                  <Input
+                    id="referralCode"
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    required
+                    placeholder="Enter your referral code"
+                    className="bg-purple-500 border-purple-300/30 text-white placeholder:text-purple-300"
+                  />
+                </div>
               </div>
             )}
 

@@ -1,26 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Users, Trophy, ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/auth";
-import { useSupabaseAuth } from "@/contexts/supabase-auth-context"; // Update with your actual path
 
 export default function AuthPage() {
-  const { user, loading } = useSupabaseAuth();
   const router = useRouter();
+  const [loading, setLoading] = useState<Boolean>(true);
 
   useEffect(() => {
     // Redirect to dashboard if user is authenticated
-    if (user && !loading) {
-
-      router.push("/dashboard");
-    } else {
-      console.log("User not authenticated or still loading");
-    }
-  }, [user, loading, router]);
+    const stored = localStorage.getItem("user");
+      if (stored) {
+        router.push("/dashboard");
+        setLoading(false);
+        return;
+      } else {
+        setLoading(false);
+      }
+  }, [loading, router]);
 
   // Show loading state while checking auth
   if (loading) {
@@ -35,9 +36,9 @@ export default function AuthPage() {
   }
 
   // If user is authenticated, don't show auth page (redirect is handled by useEffect)
-  if (user) {
-    return null;
-  }
+  // if (user) {
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">

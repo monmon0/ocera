@@ -53,43 +53,35 @@ export default function Navigation({ userInfo }: NavigationProps) {
     } else {
       setUser(null);
     }
-  }, []);
-
-  const getUserInitials = (name: string | null | undefined, email: string | null | undefined) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    }
-    if (email) {
-      return email[0].toUpperCase();
-    }
-    return '';
-  };
+  }, [router]);
 
   return (
     <nav className="bg-white/30 backdrop-blur shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
+           
             <Link href="/dashboard" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                 <span className="text-purple-600 font-bold text-lg">O</span>
               </div>
               <span className="text-black font-bold text-xl">Ocera</span>
             </Link>
+            
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             <div className="flex items-center space-x-4 text-white">
-              <Button variant="ghost" className="text-purple-700 bg-white/0" size="sm" asChild>
+               {user && <Button variant="ghost" className="text-purple-700 bg-white/0" size="sm" asChild>
                 <Link href="/dashboard">Dashboard</Link>
-              </Button>
+              </Button>}
               <Button variant="ghost" className="text-purple-700" size="sm" asChild>
                 <Link href="/discover">Discover</Link>
               </Button>
-              <Button size="sm" asChild className="bg-white text-purple-600 hover:bg-gray-100">
+              {user &&<Button size="sm" asChild className="bg-purple-500 text-white hover:bg-purple-300">
                 <Link href="/create">Create</Link>
-              </Button>
+              </Button>}
               
               {/* User Profile Dropdown */}
               {/* {userInfo && !loading ? (

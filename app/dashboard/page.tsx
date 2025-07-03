@@ -34,6 +34,38 @@ const mockActivity = [
   { type: "comment", user: "FanCharlie", character: "Kai Shadowblade", time: "6 hours ago" },
 ];
 
+const UserCache = {
+  data: null,
+  characters: null,
+  expiry: null,
+  duration: 5 * 60 * 1000, // 5 minutes
+  
+  isValid() {
+    return this.data && this.expiry && Date.now() < this.expiry;
+  },
+  
+  set(userData, charactersData) {
+    this.data = userData;
+    this.characters = charactersData;
+    this.expiry = Date.now() + this.duration;
+  },
+  
+  clear() {
+    this.data = null;
+    this.characters = null;
+    this.expiry = null;
+  },
+  
+  getStoredEmail() {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored).email : null;
+    } catch {
+      return null;
+    }
+  }
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,55 +130,127 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (!stored) {
+        router.push("/");
+        return;
+      }
 
-    useEffect(() => {
-      const fetchUser = async () => {
-        try {
-          const stored = localStorage.getItem("user");
-          if (!stored) {
-            router.push("/");
-            return;
-          }
-
-          const parsed = JSON.parse(stored);
-          const { data, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("email", parsed.email)
-            .single();
-          
-          const characters = await supabase
-            .from("characters")
-            .select("*")
-            .eq("user_id", parsed.id);
-
-          if (error || !data) {
-            console.error("DB fetch failed:", error);
-            // router.push("/");
-            return;
-          }
-
-          setUser(data);
-          setTotalCharacters(data.total_characters || 0);
-          setCharacters(characters.data || []);
+      const parsed = JSON.parse(stored);
       
-          
-        } catch (err) {
-          console.error("Auth error:", err);
-          // router.push("/");
-        } finally {
-          setLoading(false);
-        }
-      };
+      // Check if we have valid cached data for this user
+      if (UserCache.isValid() && UserCache.data?.email === parsed.email) {
+        console.log('✅ Using cached user data');
+        setUser(UserCache.data);
+        setTotalCharacters(UserCache.data.total_characters || 0);
+        setCharacters(UserCache.characters || []);
+        setLoading(false);
+        return;
+      }
 
-      fetchUser();
-    }, [router]);
+      console.log('🔄 Fetching fresh user data from database');
+      
+      // Fetch user data
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", parsed.email)
+        .single();
+      
+      // Fetch characters data  
+      const { data: charactersData, error: charactersError } = await supabase
+        .from("characters")
+        .select("*")
+        .eq("user_id", parsed.id);
+
+      if (userError || !userData) {
+        console.error("DB fetch failed:", userError);
+        // router.push("/");
+        return;
+      }
+
+      // Set state
+      setUser(userData);
+      setTotalCharacters(userData.total_characters || 0);
+      setCharacters(charactersData || []);
+      
+      // Cache the data
+      UserCache.set(userData, charactersData || []);
+      console.log('💾 User data cached in memory for 5 minutes');
+      
+    } catch (err) {
+      console.error("Auth error:", err);
+      // router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUser();
+}, [router]);
+
+// Optional: Force refresh function
+const refreshUser = async () => {
+  UserCache.clear();
+  setLoading(true);
+  
+  try {
+    const stored = localStorage.getItem("user");
+    if (!stored) {
+      router.push("/");
+      return;
+    }
+
+    const parsed = JSON.parse(stored);
+    console.log('🔄 Force refreshing user data');
+    
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", parsed.email)
+      .single();
+    
+    const { data: charactersData } = await supabase
+      .from("characters")
+      .select("*")
+      .eq("user_id", parsed.id);
+
+    if (userError || !userData) {
+      console.error("DB fetch failed:", userError);
+      return;
+    }
+
+    setUser(userData);
+    setTotalCharacters(userData.total_characters || 0);
+    setCharacters(charactersData || []);
+    
+    // Update cache
+    UserCache.set(userData, charactersData || []);
+    console.log('💾 Fresh user data cached');
+
+  } catch (err) {
+    console.error("Auth error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Clear cache when user data is modified (call this after profile updates, character changes, etc.)
+const clearUserCache = () => {
+  UserCache.clear();
+  console.log('🗑️ User cache cleared');
+};
 
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut(); // 👈 kill Supabase session
       localStorage.removeItem("user"); // 👈 clear custom session
+      localStorage.removeItem("user");
+      UserCache.clear();
       router.push("/"); // 👈 redirect to home/login
     } catch (err) {
       console.error("Error signing out:", err);

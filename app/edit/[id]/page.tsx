@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { uploadToCloudflare } from "@/lib/cloudflare/upload"
 import { supabase } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
+import { use } from 'react';
+import {useRouter} from "next/navigation"
 
 interface ColorPalette {
   name: string
@@ -25,7 +27,9 @@ interface ColorPalette {
 
 
 
-export default function CreateOCPage() {
+export default function CreateOCPage(
+  { params }: { params: { id: string } }
+) {
   // Basic Info State
   const [characterName, setCharacterName] = useState("")
   const [quote, setQuote] = useState("")
@@ -67,23 +71,21 @@ export default function CreateOCPage() {
 
   const [profileColor, setProfileColor] = useState("");
 
-  // Trigger file selection
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+// Additional helper functions for better file management
 
-    const updatedFiles = [...selectedFiles];
-    updatedFiles[index] = file;
-    setSelectedFiles(updatedFiles);
+const removeFileAtIndex = (index: number) => {
+  setSelectedFiles(prevFiles => {
+    const updatedFiles = [...prevFiles];
+    updatedFiles.splice(index, 1);
+    return updatedFiles;
+  });
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const updatedPreviews = [...previewUrls];
-      updatedPreviews[index] = reader.result as string;
-      setPreviewUrls(updatedPreviews);
-    };
-    reader.readAsDataURL(file);
-  };
+  setPreviewUrls(prevUrls => {
+    const updatedPreviews = [...prevUrls];
+    updatedPreviews.splice(index, 1);
+    return updatedPreviews;
+  });
+};
 
   const [referenceSheet, setReferenceSheet] = useState<File | null>(null);
   const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
@@ -145,58 +147,69 @@ export default function CreateOCPage() {
   };
 
 
- const handleSubmit = async () => {
+  const handleSubmit = async () => {
   if (isLoading) return; // Prevent multiple clicks
   setIsLoading(true);
 
   try {
-    const uploadedImageUrls = await Promise.all(
-      selectedFiles.map(file => uploadToCloudflare(file)) // selectedFiles is File[]
-    );
-    const filteredUrls = uploadedImageUrls.filter(Boolean);
+    // Start with existing image URLs
+    let updatedImageUrls = [...previewUrls];
+    
+    // Only upload files that are actually new (exist in selectedFiles)
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      if (file) {
+        // This is a new file that needs to be uploaded
+        const uploadedUrl = await uploadToCloudflare(file);
+        if (uploadedUrl) {
+          updatedImageUrls[i] = uploadedUrl;
+        }
+      }
+      // If selectedFiles[i] is null, we keep the existing URL at previewUrls[i]
+    }
 
-    const referenceSheetUrl = referenceSheet
-      ? await uploadToCloudflare(referenceSheet)
-      : null;
+    // Only upload new reference sheet if a new file was selected
+    let updatedReferenceSheetUrl = referencePreviewUrl;
+    if (referenceSheet) {
+      updatedReferenceSheetUrl = await uploadToCloudflare(referenceSheet);
+    }
 
-    const moodboardImageUrl = moodboardImage
-      ? await uploadToCloudflare(moodboardImage)
-      : null;
+    // Only upload new moodboard if a new file was selected
+    let updatedMoodboardImageUrl = moodboardPreviewUrl;
+    if (moodboardImage) {
+      updatedMoodboardImageUrl = await uploadToCloudflare(moodboardImage);
+    }
 
+    // Update the character instead of inserting
     const { data, error } = await supabase
       .from("characters")
-      .insert([
-        {
-          user_id: currentUserId, // must be defined somewhere
-          name: characterName,
-          quote,
-          description: fullDescription,
-          short_description: shortDescription,
-          age,
-          species,
-          occupation,
-          location,
-          height,
-          personality_traits: personalityTraits, // must be array of string
-          abilities,
-          interests,
-          dislikes,
-          tags, // must be array of string
-          color_palette: colorPalette, // must be array of string
-          char_img: filteredUrls,
-          moodboard: moodboardImageUrl,
-          is_public: true,
-          likes_count: 0,
-          views_count: 0,
-          ref_sheet: referenceSheetUrl,
-          profile_color: profileColor, // New field for profile color
-        },
-      ])
-      .select(); // Add select() to get the inserted data back
+      .update({
+        name: characterName,
+        quote,
+        description: fullDescription,
+        short_description: shortDescription,
+        age,
+        species,
+        occupation,
+        location,
+        height,
+        personality_traits: personalityTraits,
+        abilities,
+        interests,
+        dislikes,
+        tags,
+        color_palette: colorPalette,
+        char_img: updatedImageUrls,
+        moodboard: updatedMoodboardImageUrl,
+        ref_sheet: updatedReferenceSheetUrl,
+        profile_color: profileColor,
+      })
+      .eq("id", id) // Use the character ID from params
+      .select(); // Get the updated data back
 
     if (error) {
-      console.error("Error inserting character:", error);
-      toast.error("Failed to create character. Please try again.", {
+      console.error("Error updating character:", error);
+      toast.error("Failed to update character. Please try again.", {
         duration: 5000,
         style: {
           background: '#EF4444',
@@ -207,18 +220,18 @@ export default function CreateOCPage() {
         icon: '❌',
       });
     } else {
-      const createdCharacter = data[0];
-      console.log("Character created:", createdCharacter);
+      const updatedCharacter = data[0];
+      console.log("Character updated:", updatedCharacter);
       
       // Success toast with link to view character
       toast.success(
         <div className="flex flex-col gap-2">
-          <div className="font-medium">Character created successfully!</div>
+          <div className="font-medium">Character updated successfully!</div>
           <button
             onClick={() => {
-              // Navigate to character page - adjust route as needed
-              window.location.href = `/character/${createdCharacter.id}`;
-              // Or if using React Router: navigate(`/character/${createdCharacter.id}`);
+              // Navigate to character page
+              window.location.href = `/character/${id}`;
+              // Or if using React Router: navigate(`/character/${id}`);
             }}
             className="text-white hover:text-blue-800 underline text-sm font-medium transition-colors"
           >
@@ -238,29 +251,13 @@ export default function CreateOCPage() {
         }
       );
       
-      // Reset form after successful submission
-      setCharacterName("");
-      setQuote("");
-      setShortDescription("");
-      setFullDescription("");
-      setAge("");
-      setSpecies("");
-      setOccupation("");
-      setLocation("");
-      setHeight("");
-      setPersonalityTraits([]); 
-      setAbilities([]);
-      setInterests([]);
-      setDislikes([]);
-      setTags([]);
-      setColorPalette([{ name: "", hex: "#000000", description: "" }]);
-      setSelectedFiles([]);
-      setPreviewUrls([]);
-      setReferenceSheet(null);
-      setReferencePreviewUrl(null);
-      setMoodboardImage(null);
-      setMoodboardPreviewUrl(null);
-      setShowPreview(false); // Close preview dialog
+      // Don't reset form after successful edit - keep the data
+      setShowPreview(false); // Just close preview dialog
+      
+      // Optionally redirect to character view page
+      setTimeout(() => {
+        window.location.href = `/character/${id}`;
+      }, 2000);
     }
   } catch (err) {
     console.error("Unexpected error:", err);
@@ -279,7 +276,161 @@ export default function CreateOCPage() {
   }
 };
 
-  if (isLoading) {
+// Updated handleFileInput to work with the new logic
+const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const file = e.target.files?.[0];
+  
+  if (!file) {
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const newPreviewUrl = reader.result as string;
+    
+    // Update selectedFiles - this marks the file as "new" and needing upload
+    setSelectedFiles(prevFiles => {
+      const updatedFiles = [...prevFiles];
+      // Ensure the array is long enough
+      while (updatedFiles.length <= index) {
+        updatedFiles.push(null);
+      }
+      updatedFiles[index] = file; // Store the actual file for upload
+      return updatedFiles;
+    });
+
+    // Update previewUrls - this shows the new preview immediately
+    setPreviewUrls(prevUrls => {
+      const updatedPreviews = [...prevUrls];
+      // Ensure the array is long enough
+      while (updatedPreviews.length <= index) {
+        updatedPreviews.push('');
+      }
+      updatedPreviews[index] = newPreviewUrl; // Show the new preview
+      return updatedPreviews;
+    });
+  };
+  
+  reader.readAsDataURL(file);
+};
+
+  const router = useRouter();
+  const { id } = use(params);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+  const fetchCharacter = async () => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setCurrentUserId(parsed.id); // Assuming the user object has an 'id' field
+
+      const { data, error } = await supabase
+        .from("characters")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) {
+        console.error('Character not found:', error);
+        return null;
+      }
+
+      if (parsed.id != data.user_id) {
+        console.log("not right")
+        setError(true);
+        return;
+      }
+
+      // Populate all state variables with fetched data
+      setCharacterName(data.name || "");
+      setQuote(data.quote || "");
+      setShortDescription(data.short_description || "");
+      setFullDescription(data.description || "");
+      
+      // Character Details
+      setAge(data.age || "");
+      setSpecies(data.species || "");
+      setOccupation(data.occupation || "");
+      setLocation(data.location || "");
+      setHeight(data.height || "");
+
+      // Personality & Traits (ensure arrays)
+      setPersonalityTraits(Array.isArray(data.personality_traits) ? data.personality_traits : []);
+      setAbilities(Array.isArray(data.abilities) ? data.abilities : []);
+      setInterests(Array.isArray(data.interests) ? data.interests : []);
+      setDislikes(Array.isArray(data.dislikes) ? data.dislikes : []);
+      setTags(Array.isArray(data.tags) ? data.tags : []);
+
+      // Color Palette (ensure it's an array with proper structure)
+      setColorPalette(
+        Array.isArray(data.color_palette) && data.color_palette.length > 0
+          ? data.color_palette
+          : [{ name: "", hex: "#000000", description: "" }]
+      );
+
+      // Profile color
+      setProfileColor(data.profile_color || "");
+
+      // Handle image URLs (char_img is likely an array of URLs)
+      if (Array.isArray(data.char_img) && data.char_img.length > 0) {
+        setPreviewUrls(data.char_img);
+        // Note: selectedFiles can't be set from URLs as they're File objects
+        // You might need to handle this differently if you need to edit images
+      }
+
+      // Handle reference sheet URL
+      if (data.ref_sheet) {
+        setReferencePreviewUrl(data.ref_sheet);
+        // Note: referenceSheet can't be set from URL as it's a File object
+      }
+
+      // Handle moodboard URL
+      if (data.moodboard) {
+        setMoodboardPreviewUrl(data.moodboard);
+        // Note: moodboardImage can't be set from URL as it's a File object
+      }
+
+      console.log("Character data:", data);
+    } else {
+      console.warn("No user found in localStorage");
+    }
+  }
+  fetchCharacter();
+}, [id]) // Added id as dependency
+
+ if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 max-w-md w-full border border-white/20">
+              <div className="mb-6">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  This character does not belong to you, and you do not have permission to edit it.
+                </p>
+              </div>
+              
+              <Link href="/dashboard">
+                <Button className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg">
+                  Return to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    );
+  }
+
+  if (!characterName) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
         <div className="container mx-auto px-4 py-8">
@@ -290,17 +441,6 @@ export default function CreateOCPage() {
       </div>
     );
   }
-
-
-  useEffect(() => {
-   const stored = localStorage.getItem("user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setCurrentUserId(parsed.id); // Assuming the user object has an 'id' field
-    } else {
-      console.warn("No user found in localStorage");
-    }
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
@@ -748,18 +888,32 @@ export default function CreateOCPage() {
                 <CardContent className="space-y-8">
                   {/* Character Images */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[...Array(8)].map((_, i) => (
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="relative group">
                       <label
-                        key={i}
                         htmlFor={`image-upload-${i}`}
-                        className="aspect-square border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer overflow-hidden"
+                        className="aspect-square border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer overflow-hidden block"
                       >
                         {previewUrls[i] ? (
-                          <img src={previewUrls[i]} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
+                          <>
+                            <img 
+                              src={previewUrls[i]} 
+                              alt={`Image ${i + 1}`} 
+                              className="w-full h-full object-cover" 
+                            />
+                            {/* Overlay for uploaded images */}
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <Upload className="h-6 w-6 text-white" />
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           <>
                             <Upload className="h-8 w-8 text-purple-400 mb-2" />
-                            <span className="text-sm text-purple-600">Upload Image {i + 1}</span>
+                            <span className="text-sm text-purple-600 text-center px-2">
+                              Upload Image {i + 1}
+                            </span>
                           </>
                         )}
                         <input
@@ -770,8 +924,62 @@ export default function CreateOCPage() {
                           onChange={(e) => handleFileInput(e, i)}
                         />
                       </label>
-                    ))}
-                  </div>
+
+                      {/* Delete button - only show when there's an image */}
+                      {previewUrls[i] && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeFileAtIndex(i);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors duration-200 shadow-lg opacity-0 group-hover:opacity-100"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      )}
+
+                      {/* Replace button - only show when there's an image */}
+                      {previewUrls[i] && (
+                        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <label
+                            htmlFor={`image-replace-${i}`}
+                            className="bg-purple-500 hover:bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs cursor-pointer transition-colors duration-200 shadow-lg"
+                            title="Replace image"
+                          >
+                            <Upload className="h-4 w-4" />
+                          </label>
+                          <input
+                            id={`image-replace-${i}`}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileInput(e, i)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Image counter/indicator */}
+                      {previewUrls[i] && (
+                        <div className="absolute top-2 left-2 bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
+                          {i + 1}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Image management info */}
+                <div className="mt-4 text-sm text-gray-600">
+                  <p className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Click to upload or drag and drop images. Hover over uploaded images to replace or remove them.
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Uploaded: {previewUrls.filter(url => url && url.trim() !== '').length} / 8 images
+                  </p>
+                </div>
 
 
                   {/* Reference Sheet */}
@@ -1002,7 +1210,7 @@ export default function CreateOCPage() {
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Create Character
+                  Edit Character
                 </>
               )}
             </Button>

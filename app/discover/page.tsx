@@ -32,86 +32,25 @@ import Image from "next/image"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 
-const mockTrendingOCs = [
-  {
-    id: 1,
-    name: "Aria Moonweaver",
-    creator: { username: "MysticArt", displayName: "Luna Martinez", avatar: "/placeholder.svg" },
-    description: "A celestial mage who weaves moonlight into powerful spells and protects the night realm.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 1247,
-    views: 5632,
-    tags: ["fantasy", "magic", "celestial", "mage"],
-    trending: true,
-    featured: true,
-    createdAt: "2024-01-15",
+const CharactersCache = {
+  data: null,
+  expiry: null,
+  duration: 5 * 60 * 1000, // 5 minutes
+  
+  isValid() {
+    return this.data && this.expiry && Date.now() < this.expiry;
   },
-  {
-    id: 2,
-    name: "Kai Stormborn",
-    creator: { username: "ElementalMage", displayName: "Alex Chen", avatar: "/placeholder.svg" },
-    description: "Lightning elemental warrior from the Storm Peaks, master of thunder and wind.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 892,
-    views: 3421,
-    tags: ["elemental", "warrior", "lightning", "storm"],
-    trending: true,
-    featured: false,
-    createdAt: "2024-01-14",
+  
+  set(data) {
+    this.data = data;
+    this.expiry = Date.now() + this.duration;
   },
-  {
-    id: 3,
-    name: "Nova Starlight",
-    creator: { username: "CosmicCreator", displayName: "Sarah Kim", avatar: "/placeholder.svg" },
-    description: "Cosmic entity who travels between galaxies, spreading stardust and wonder.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 1156,
-    views: 4789,
-    tags: ["cosmic", "space", "entity", "stars"],
-    trending: true,
-    featured: true,
-    createdAt: "2024-01-13",
-  },
-  {
-    id: 4,
-    name: "Ember Roseheart",
-    creator: { username: "FloralFire", displayName: "Maya Rodriguez", avatar: "/placeholder.svg" },
-    description: "Fire fairy who tends to magical gardens, balancing destruction and growth.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 734,
-    views: 2156,
-    tags: ["fairy", "fire", "nature", "garden"],
-    trending: false,
-    featured: false,
-    createdAt: "2024-01-12",
-  },
-  {
-    id: 5,
-    name: "Zephyr Nightwind",
-    creator: { username: "ShadowArtist", displayName: "Marcus Chen", avatar: "/placeholder.svg" },
-    description: "Shadow assassin who moves like the wind, protector of the innocent.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 623,
-    views: 1987,
-    tags: ["assassin", "shadow", "wind", "protector"],
-    trending: false,
-    featured: false,
-    createdAt: "2024-01-11",
-  },
-  {
-    id: 6,
-    name: "Crystal Dreamweaver",
-    creator: { username: "DreamArtist", displayName: "Elena Rodriguez", avatar: "/placeholder.svg" },
-    description: "Dream guardian who protects sleeping minds from nightmares using crystal magic.",
-    image: "/placeholder.svg?height=300&width=300",
-    likes: 945,
-    views: 3654,
-    tags: ["dream", "crystal", "guardian", "magic"],
-    trending: false,
-    featured: true,
-    createdAt: "2024-01-10",
-  },
-]
+  
+  clear() {
+    this.data = null;
+    this.expiry = null;
+  }
+};
 
 const mockTrendingCreators = [
   {
@@ -231,28 +170,120 @@ export default function DiscoverPage() {
   };
 
   useEffect(() => {
-    const fetchCharacters = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('characters')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error("Error fetching characters:", error);
-          return;
-        }
-
-        setCharacters(data || []);
-      } catch (err) {
-        console.error("Unexpected error:", err);
-      } finally {
+  const fetchCharacters = async () => {
+    try {
+      // Check in-memory cache first
+      if (CharactersCache.isValid()) {
+        console.log('✅ Using in-memory cached characters data');
+        setCharacters(CharactersCache.data);
         setLoading(false);
+        return;
       }
-    };
-    fetchCharacters();
 
-  }, []);
+      // Fetch fresh data from Supabase
+      console.log('🔄 Fetching fresh characters data from database');
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching characters:", error);
+        return;
+      }
+
+      const characters = data || [];
+      setCharacters(characters);
+
+      // Cache in memory
+      CharactersCache.set(characters);
+      console.log('💾 Characters cached in memory for 5 minutes');
+
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchCharacters();
+}, []);
+
+// Optional: Force refresh function
+const refreshCharacters = async () => {
+  CharactersCache.clear();
+  setLoading(true);
+  
+  try {
+    console.log('🔄 Force refreshing characters data');
+    const { data, error } = await supabase
+      .from('characters')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching characters:", error);
+      return;
+    }
+
+    const characters = data || [];
+    setCharacters(characters);
+    
+    // Update cache
+    CharactersCache.set(characters);
+    console.log('💾 Fresh characters data cached');
+
+  } catch (err) {
+    console.error("Unexpected error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Clear cache when characters are modified (call this after create/update/delete operations)
+const clearCharactersCache = () => {
+  CharactersCache.clear();
+  console.log('🗑️ Characters cache cleared');
+};
+
+
+// Optional: Add a function to force refresh the cache
+// const refreshCharacters = async () => {
+//   const CACHE_KEY = 'characters_cache';
+//   const CACHE_EXPIRY_KEY = 'characters_cache_expiry';
+  
+//   // Clear cache
+//   localStorage.removeItem(CACHE_KEY);
+//   localStorage.removeItem(CACHE_EXPIRY_KEY);
+  
+//   setLoading(true);
+  
+//   try {
+//     const { data, error } = await supabase
+//       .from('characters')
+//       .select('*')
+//       .order('created_at', { ascending: false });
+
+//     if (error) {
+//       console.error("Error fetching characters:", error);
+//       return;
+//     }
+
+//     const characters = data || [];
+//     setCharacters(characters);
+
+//     // Cache the fresh data
+//     const now = Date.now();
+//     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+//     localStorage.setItem(CACHE_KEY, JSON.stringify(characters));
+//     localStorage.setItem(CACHE_EXPIRY_KEY, (now + CACHE_DURATION).toString());
+
+//   } catch (err) {
+//     console.error("Unexpected error:", err);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
 
 
   const toggleLike = (ocId: number) => {

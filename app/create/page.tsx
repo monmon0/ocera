@@ -278,6 +278,9 @@ export default function CreateOCPage() {
     });
   } finally {
     setIsCreatingChar(false)
+    // After successful character creation/update/deletion
+    localStorage.removeItem('characters_cache');
+    localStorage.removeItem('characters_cache_expiry');
   }
 };
 
