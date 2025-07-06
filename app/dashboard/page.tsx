@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import toast from 'react-hot-toast';
+import { deleteFromCloudflare } from "@/lib/cloudflare/upload";
 
 import { 
   TrendingUp, 
@@ -80,15 +81,30 @@ export default function Dashboard() {
   // Your delete logic here
     try {
       // Delete the character from the 'characters' table
-      const { error } = await supabase
+      
+      const { data, error: fetchError } = await supabase
         .from('characters')
         .delete()
         .eq('id', characterId)
+        .select()
 
-      
-    if (error) {
-      console.error("Error Deleting", error);
-      toast.error("Failed to create character. Please try again.", {
+       if (fetchError || !data) {
+          console.error("Error fetching character:", fetchError);
+          toast.error("Failed to fetch character data.");
+          return false;
+        }
+
+        // Step 2: Delete all associated images from Cloudflare
+        const imageUrls: string[] = data.char_img || [];
+
+        for (const url of imageUrls) {
+          console.log("deleting", url);
+          await deleteFromCloudflare(url);
+        }
+
+    if (fetchError) {
+      console.error("Error Deleting", fetchError);
+      toast.error("Failed to delete character. Please try again.", {
         duration: 5000,
         style: {
           background: '#EF4444',
@@ -400,7 +416,7 @@ const clearUserCache = () => {
             </Card>
 
             {/* Recent Activity */}
-            <Card className="border-purple-200 shadow-lg">
+            {/* <Card className="border-purple-200 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-purple-900 text-lg">Recent Activity</CardTitle>
               </CardHeader>
@@ -422,12 +438,12 @@ const clearUserCache = () => {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
 
         {/* Activity Feed or Recent Updates could go here */}
-        <Card className="mt-8">
+        {/* <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
@@ -440,7 +456,7 @@ const clearUserCache = () => {
               <p>Your recent activity will appear here</p>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </main>
       </div>
 

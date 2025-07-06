@@ -19,21 +19,21 @@ export default function AuthPage() {
         setLoading(false);
         return;
       } else {
-        setLoading(false);
+        setLoading(true);
       }
   }, [loading, router]);
 
   // Show loading state while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <Sparkles className="h-12 w-12 mx-auto mb-4 animate-spin" />
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+  //       <div className="text-white text-center">
+  //         <Sparkles className="h-12 w-12 mx-auto mb-4 animate-spin" />
+  //         <p>Loading...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // If user is authenticated, don't show auth page (redirect is handled by useEffect)
   // if (user) {

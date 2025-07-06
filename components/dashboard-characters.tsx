@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Heart, Eye, Trash2, MoreVertical, AlertTriangle, Router } from "lucide-react"
+import { Edit, Heart, Eye, Trash2, MoreVertical, AlertTriangle, Plus, Sparkles } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from 'next/navigation'
+import CharacterCard from './character-card'
 
 type Character = {
   id: string
@@ -113,114 +114,60 @@ export default function CharacterCollectionCard({ characters, onDelete }: Props)
         </CardHeader>
         <CardContent>
           {characters.length === 0 ? (
-            <div className="text-center text-purple-600">
-              <p className="mb-4">You have no characters yet.</p>
-              <Link href="/create">
-                <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-                  Create Your First Character
-                </button>
-              </Link>
+            <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+              <div className="relative mb-8">
+                {/* Animated background glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 rounded-full blur-xl opacity-30 animate-pulse"></div>
+                
+                {/* Icon container */}
+                <div className="relative bg-gradient-to-br from-purple-100 to-pink-100 rounded-full p-6 border border-purple-200 shadow-lg">
+                  <Sparkles className="w-12 h-12 text-purple-600 animate-bounce" />
+                </div>
+              </div>
+              
+              <div className="text-center max-w-md">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                  Ready to Create Magic?
+                </h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Your character collection is waiting to come to life. Start building your first character and watch your story unfold.
+                </p>
+                
+                <div className="space-y-4">
+                  {/* Primary CTA */}
+                  <a href="/create" className="">
+                  <button className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative flex items-center gap-2">
+                      <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                      Create Your First Character
+                    </div>
+                  </button>
+                  </a>
+                  {/* Secondary info */}
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-purple-300 rounded-full animate-pulse"></div>
+                    <span>Quick setup • Unlimited creativity</span>
+                    <div className="w-2 h-2 bg-pink-300 rounded-full animate-pulse delay-150"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
-              {characters.map((character) => (
-                <div key={character.id} className="relative group">
-                  <Link href={`/character/${character.id}`}>
-                    <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer border-purple-100 relative overflow-hidden">
-                      <CardContent className="p-4">
-                        {/* Action Buttons */}
-                        <div className="absolute top-3 right-3 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-
-                            <button 
-                              className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md hover:shadow-lg transition-all duration-200 text-blue-600 hover:text-blue-700 hover:scale-105"
-                              onClick={(e) => handleEditClick(e, character.id)}
-                              title="Edit character"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          
-                          {onDelete && (
-                            <button 
-                              className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md hover:shadow-lg transition-all duration-200 text-red-600 hover:text-red-700 hover:scale-105"
-                              onClick={(e) => handleDeleteClick(e, character)}
-                              title="Delete character"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Character Image */}
-                        <div className="aspect-square relative mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 group-hover:scale-[1.02] transition-transform duration-300">
-                          <div className="absolute inset-0 flex items-center justify-center text-purple-400">
-                            <Image 
-                              src={character.char_img?.length > 0 ? character.char_img[0] : "https://i.pinimg.com/736x/88/c5/59/88c559851ecef28256a9ae4a038d78fd.jpg"}
-                              alt={character.name}
-                              width={200}
-                              height={200}
-                              className="object-cover w-full h-full"
-                              loading="lazy"
-                            />
-                          </div>
-                          
-                          {/* Gradient Overlay on Hover */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        </div>
-                        
-                        {/* Character Info */}
-                        <h3 className="font-semibold text-purple-900 mb-3 text-lg group-hover:text-purple-700 transition-colors">
-                          {character.name}
-                        </h3>
-                        
-                        {/* Stats */}
-                        <div className="flex items-center justify-between text-sm text-purple-600 mb-3">
-                          <span className="flex items-center bg-purple-50 px-2 py-1 rounded-full">
-                            <Heart className="w-4 h-4 mr-1" />
-                            {character.likes_count || character.likes || 0}
-                          </span>
-                          <span className="flex items-center bg-purple-50 px-2 py-1 rounded-full">
-                            <Eye className="w-4 h-4 mr-1" />
-                            {character.views_count || character.views || 0}
-                          </span>
-                        </div>
-                        
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-1">
-                          {character.tags.slice(0, 3).map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                          {character.tags.length > 3 && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs bg-gray-100 text-gray-600"
-                            >
-                              +{character.tags.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </div>
-              ))}
+              <CharacterCard characters={characters} onDelete={onDelete} isEdit={true}/>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      {/* <DeleteConfirmationModal
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm({ isOpen: false, character: null })}
         onConfirm={handleDeleteConfirm}
         characterName={deleteConfirm.character?.name || ''}
-      />
+      /> */}
     </>
   )
 }

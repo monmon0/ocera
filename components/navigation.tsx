@@ -223,11 +223,11 @@ export default function Navigation({ userInfo }: NavigationProps) {
 
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+                <Button variant="ghost" size="icon" className=" hover:bg-white/20">
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-gradient-to-b from-purple-600 to-pink-600 border-l-purple-200">
+              <SheetContent side="right" className="border-l-purple-200">
                 <div className="flex flex-col space-y-4 mt-8">
                   <Button variant="ghost" asChild className="text-black hover:bg-white/20 justify-start">
                     <Link href="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link>

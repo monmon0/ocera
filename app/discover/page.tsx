@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import ImprovedOCHeader from "@/components/HeroHeader"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
@@ -27,10 +28,10 @@ import {
   UserPlus,
   Bookmark,
 } from "lucide-react"
-import Navigation from "@/components/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import CharacterCard from "@/components/character-card"
 
 const CharactersCache = {
   data: null,
@@ -159,15 +160,7 @@ export default function DiscoverPage() {
   )
 
   const [characters, setCharacters] = useState([]);
-  const [favorites, setFavorites] = useState<string[]>([]);
 
-  const toggleFavorite = (characterId: string) => {
-    setFavorites((prev) =>
-      prev.includes(characterId)
-        ? prev.filter((id) => id !== characterId)
-        : [...prev, characterId]
-    );
-  };
 
   useEffect(() => {
   const fetchCharacters = async () => {
@@ -205,6 +198,10 @@ export default function DiscoverPage() {
       setLoading(false);
     }
   };
+
+  const fetchCreators = async () => {
+    
+  }
 
   fetchCharacters();
 }, []);
@@ -374,7 +371,7 @@ const clearCharactersCache = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
+          {/* <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-purple-900 mb-4 flex items-center justify-center gap-3">
               <Sparkles className="h-10 w-10" />
               Discover Amazing OCs
@@ -382,10 +379,11 @@ const clearCharactersCache = () => {
             <p className="text-xl text-purple-600 mb-6">
               Explore trending characters, find new creators, and join exciting challenges
             </p>
-          </div>
+          </div> */}
+          <ImprovedOCHeader/>
 
           {/* Featured Section */}
-          <Card className="border-purple-200 shadow-lg mb-8 bg-gradient-to-r from-purple-600 to-indigo-700 text-white">
+          {/* <Card className="border-purple-200 shadow-lg mb-8 bg-gradient-to-r from-purple-600 to-indigo-700 text-white">
             <CardContent className="p-8">
               <div className="grid lg:grid-cols-2 gap-8 items-center">
                 <div>
@@ -393,35 +391,32 @@ const clearCharactersCache = () => {
                     <Crown className="h-4 w-4 mr-1" />
                     Featured OC
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">Aria Moonweaver</h2>
+                  <h2 className="text-3xl font-bold mb-4">{filteredOCs[0]?.name}</h2>
                   <p className="text-purple-100 mb-6">
-                    A celestial mage who weaves moonlight into powerful spells and protects the night realm. This
-                    stunning character has captured the community's imagination with its intricate design and compelling
-                    backstory.
+                    {filteredOCs[0]?.description}
                   </p>
                   <div className="flex items-center gap-4 mb-6">
                     <div className="flex items-center gap-2">
                       <Heart className="h-5 w-5" />
-                      <span>1,247 likes</span>
+                      <span>{filteredOCs[0]?.likes_count}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Eye className="h-5 w-5" />
-                      <span>5,632 views</span>
+                      <span>{filteredOCs[0]?.views_count} views</span>
                     </div>
                   </div>
-                  <Link href="/character/1">
+                  <Link href={`/character/${filteredOCs[0]?.id}`}>
                     <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-50">
                       View Character
                     </Button>
                   </Link>
                 </div>
-                <div className="relative">
+               <div className="relative aspect-square">
                   <Image
-                    src="/placeholder.svg?height=400&width=400"
+                    src={filteredOCs[0]?.char_img.length > 0 ? filteredOCs[0]?.char_img[0] : "/placeholder.svg?height=400&width=400"}
                     alt="Aria Moonweaver"
-                    width={400}
-                    height={400}
-                    className="rounded-lg shadow-2xl"
+                    fill
+                    className="rounded-lg shadow-2xl object-cover"
                   />
                   <div className="absolute -top-4 -right-4 bg-yellow-500 text-yellow-900 p-2 rounded-full">
                     <Star className="h-6 w-6 fill-current" />
@@ -429,7 +424,7 @@ const clearCharactersCache = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Tabs defaultValue="characters" className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-purple-100 mb-8">
@@ -463,94 +458,109 @@ const clearCharactersCache = () => {
             {/* Characters Tab */}
             <TabsContent value="characters">
               {/* Search and Filters */}
-              <Card className="border-purple-200 shadow-lg mb-8">
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row gap-4 mb-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-500" />
-                      <Input
-                        placeholder="Search characters, creators, or tags..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 border-purple-200 focus:border-purple-500"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-40 border-purple-200 focus:border-purple-500">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="trending">Trending</SelectItem>
-                          <SelectItem value="likes">Most Liked</SelectItem>
-                          <SelectItem value="views">Most Viewed</SelectItem>
-                          <SelectItem value="recent">Most Recent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={filterBy} onValueChange={setFilterBy}>
-                        <SelectTrigger className="w-40 border-purple-200 focus:border-purple-500">
-                          <Filter className="h-4 w-4 mr-2" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Characters</SelectItem>
-                          <SelectItem value="trending">Trending</SelectItem>
-                          <SelectItem value="featured">Featured</SelectItem>
-                          <SelectItem value="recent">Recent</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant={viewMode === "grid" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setViewMode("grid")}
-                        className={
-                          viewMode === "grid" ? "bg-purple-600 text-white" : "border-purple-300 text-purple-700"
-                        }
-                      >
-                        <Grid3X3 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={viewMode === "list" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setViewMode("list")}
-                        className={
-                          viewMode === "list" ? "bg-purple-600 text-white" : "border-purple-300 text-purple-700"
-                        }
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+               <div className="border border-purple-200 rounded-lg shadow-lg mb-8 bg-white">
+          <div className="p-6">
+            {/* Search and Controls */}
+            <div className="flex flex-col gap-4 mb-4">
+              {/* Search Input - Full width on mobile */}
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-500" />
+                <input
+                  type="text"
+                  placeholder="Search characters, creators, or tags..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
 
-                  {/* Tag Filter */}
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={selectedTag === null ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedTag(null)}
-                      className={
-                        selectedTag === null ? "bg-purple-600 text-white" : "border-purple-300 text-purple-700"
-                      }
-                    >
-                      All Tags
-                    </Button>
-                    {mockTags.slice(0, 8).map((tag) => (
-                      <Button
-                        key={tag.name}
-                        variant={selectedTag === tag.name ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedTag(tag.name)}
-                        className={
-                          selectedTag === tag.name ? "bg-purple-600 text-white" : "border-purple-300 text-purple-700"
-                        }
-                      >
-                        #{tag.name}
-                        {tag.trending && <TrendingUp className="h-3 w-3 ml-1 text-orange-500" />}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Filters Row - Responsive layout */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Sort Dropdown */}
+                <div className="flex-1 min-w-0">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                  >
+                    <option value="trending">Trending</option>
+                    <option value="likes">Most Liked</option>
+                    <option value="views">Most Viewed</option>
+                    <option value="recent">Most Recent</option>
+                  </select>
+                </div>
+
+                {/* Filter Dropdown */}
+                <div className="flex-1 min-w-0">
+                  <select
+                    value={filterBy}
+                    onChange={(e) => setFilterBy(e.target.value)}
+                    className="w-full px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                  >
+                    <option value="all">All Characters</option>
+                    <option value="trending">Trending</option>
+                    <option value="featured">Featured</option>
+                    <option value="recent">Recent</option>
+                  </select>
+                </div>
+
+                {/* View Mode Toggle - Compact on mobile */}
+                <div className="flex rounded-md border border-purple-200 overflow-hidden">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`px-3 py-2 flex items-center justify-center transition-colors ${
+                      viewMode === "grid" 
+                        ? "bg-purple-600 text-white" 
+                        : "bg-white text-purple-700 hover:bg-purple-50"
+                    }`}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    <span className="ml-2 hidden sm:inline">Grid</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`px-3 py-2 flex items-center justify-center transition-colors border-l border-purple-200 ${
+                      viewMode === "list" 
+                        ? "bg-purple-600 text-white" 
+                        : "bg-white text-purple-700 hover:bg-purple-50"
+                    }`}
+                  >
+                    <List className="h-4 w-4" />
+                    <span className="ml-2 hidden sm:inline">List</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+        {/* Tag Filter */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedTag(null)}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              selectedTag === null 
+                ? "bg-purple-600 text-white" 
+                : "border border-purple-300 text-purple-700 hover:bg-purple-50"
+            }`}
+          >
+            All Tags
+          </button>
+          {mockTags.slice(0, 8).map((tag) => (
+            <button
+              key={tag.name}
+              onClick={() => setSelectedTag(tag.name)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors flex items-center gap-1 ${
+                selectedTag === tag.name 
+                  ? "bg-purple-600 text-white" 
+                  : "border border-purple-300 text-purple-700 hover:bg-purple-50"
+              }`}
+            >
+              #{tag.name}
+              {tag.trending && <TrendingUp className="h-3 w-3 text-orange-500" />}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
 
               {/* Results */}
               <div className="mb-4">
@@ -563,94 +573,7 @@ const clearCharactersCache = () => {
               {/* Characters Grid/List */}
               {viewMode === "grid" ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredOCs.map((oc) => (
-                    <Card key={oc.id} className="border-purple-200 shadow-lg hover:shadow-xl transition-shadow group">
-                      <div className="relative">
-                        <Image
-                          src={oc.image || "/placeholder.svg"}
-                          alt={oc.name}
-                          width={300}
-                          height={300}
-                          className="w-full aspect-square object-cover rounded-t-lg"
-                        />
-                        <div className="absolute top-2 left-2 flex gap-1">
-                          {oc.trending && (
-                            <Badge className="bg-orange-500 text-white">
-                              <Fire className="h-3 w-3 mr-1" />
-                              Trending
-                            </Badge>
-                          )}
-                          {oc.featured && (
-                            <Badge className="bg-yellow-500 text-yellow-900">
-                              <Star className="h-3 w-3 mr-1" />
-                              Featured
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toggleSave(oc.id)}
-                            className={`h-8 w-8 p-0 bg-white/80 hover:bg-white ${
-                              savedOCs.has(oc.id) ? "text-yellow-600" : "text-purple-600"
-                            }`}
-                          >
-                            <Bookmark className={`h-4 w-4 ${savedOCs.has(oc.id) ? "fill-current" : ""}`} />
-                          </Button>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="mb-3">
-                          <Link href={`/character/${oc.id}`}>
-                            <h3 className="font-bold text-purple-900 hover:text-purple-700 transition-colors cursor-pointer mb-1">
-                              {oc.name}
-                            </h3>
-                          </Link>
-                          {/* <Link href={`/profile/${oc.username}`}>
-                            <p className="text-sm text-purple-600 hover:text-purple-800 cursor-pointer">
-                              by {oc.creator.displayName}
-                            </p>
-                          </Link> */}
-                        </div>
-
-                        <p className="text-sm text-purple-700 mb-3 line-clamp-2">{oc.description}</p>
-
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {oc.tags.slice(0, 3).map((tag, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 text-sm text-purple-600">
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-4 w-4" />
-                              {oc.likes_count}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Eye className="h-4 w-4" />
-                              {oc.views_count}
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toggleLike(oc.id)}
-                            className={`${
-                              likedOCs.has(oc.id)
-                                ? "text-red-600 hover:text-red-700"
-                                : "text-purple-600 hover:text-purple-800"
-                            }`}
-                          >
-                            <Heart className={`h-4 w-4 ${likedOCs.has(oc.id) ? "fill-current" : ""}`} />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  <CharacterCard characters={filteredOCs} isEdit={false}/>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -658,27 +581,16 @@ const clearCharactersCache = () => {
                     <Card key={oc.id} className="border-purple-200 shadow-lg">
                       <CardContent className="p-6">
                         <div className="flex gap-6">
-                          <div className="relative">
+                          <div className="relative aspect-square">
                             <Image
-                              src={oc.image || "/placeholder.svg"}
+                              src={oc.char_img.length > 0 ? oc.char_img[0] : "/placeholder.svg"}
                               alt={oc.name}
                               width={120}
                               height={120}
-                              className="rounded-lg object-cover"
+                              className="rounded-lg object-cover h-full"
                             />
                             <div className="absolute top-1 left-1 flex flex-col gap-1">
-                              {oc.trending && (
-                                <Badge className="bg-orange-500 text-white text-xs">
-                                  <Fire className="h-2 w-2 mr-1" />
-                                  Hot
-                                </Badge>
-                              )}
-                              {oc.featured && (
-                                <Badge className="bg-yellow-500 text-yellow-900 text-xs">
-                                  <Star className="h-2 w-2 mr-1" />
-                                  Featured
-                                </Badge>
-                              )}
+                              {/* badges */}
                             </div>
                           </div>
 
@@ -846,7 +758,7 @@ const clearCharactersCache = () => {
                         size="sm"
                         variant="outline"
                         className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                        onClick={() => setSelectedTag(tag.name)}
+                      onClick={() => setSelectedTag(tag.name)}
                       >
                         Explore
                       </Button>
@@ -857,7 +769,8 @@ const clearCharactersCache = () => {
             </TabsContent>
 
             {/* Challenges Tab */}
-            <TabsContent value="challenges">
+
+            {/* <TabsContent value="challenges">
               <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {mockChallenges.map((challenge) => (
                   <Card key={challenge.id} className="border-purple-200 shadow-lg">
@@ -903,445 +816,97 @@ const clearCharactersCache = () => {
                   </Card>
                 ))}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>
     </div>
   )
 }
-
-
-// "use client";
-
-// import { useState, useEffect } from "react"
-// import { Button } from "@/components/ui/button"
-// import { Card, CardContent } from "@/components/ui/card"
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-// import { Badge } from "@/components/ui/badge"
-// import { Input } from "@/components/ui/input"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// import {
-//   Search,
-//   Filter,
-//   Grid,
-//   TrendingUp,
-//   Heart,
-//   Star,
-//   Users,
-//   Calendar,
-//   Eye,
-//   Grid3X3,
-//   List,
-//   Sparkles,
-//   Trophy,
-//   FlameIcon as Fire,
-//   Zap,
-//   Crown,
-//   UserPlus,
-//   Bookmark,
-// } from "lucide-react"
-// import Image from "next/image"
-// import Link from "next/link"
-// import { supabase } from "@/lib/supabase";
-
-// const mockTrendingOCs = [
-//   {
-//     id: 1,
-//     name: "Aria Moonweaver",
-//     creator: { username: "MysticArt", displayName: "Luna Martinez", avatar: "/placeholder.svg" },
-//     description: "A celestial mage who weaves moonlight into powerful spells and protects the night realm.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 1247,
-//     views: 5632,
-//     tags: ["fantasy", "magic", "celestial", "mage"],
-//     trending: true,
-//     featured: true,
-//     createdAt: "2024-01-15",
-//   },
-//   {
-//     id: 2,
-//     name: "Kai Stormborn",
-//     creator: { username: "ElementalMage", displayName: "Alex Chen", avatar: "/placeholder.svg" },
-//     description: "Lightning elemental warrior from the Storm Peaks, master of thunder and wind.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 892,
-//     views: 3421,
-//     tags: ["elemental", "warrior", "lightning", "storm"],
-//     trending: true,
-//     featured: false,
-//     createdAt: "2024-01-14",
-//   },
-//   {
-//     id: 3,
-//     name: "Nova Starlight",
-//     creator: { username: "CosmicCreator", displayName: "Sarah Kim", avatar: "/placeholder.svg" },
-//     description: "Cosmic entity who travels between galaxies, spreading stardust and wonder.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 1156,
-//     views: 4789,
-//     tags: ["cosmic", "space", "entity", "stars"],
-//     trending: true,
-//     featured: true,
-//     createdAt: "2024-01-13",
-//   },
-//   {
-//     id: 4,
-//     name: "Ember Roseheart",
-//     creator: { username: "FloralFire", displayName: "Maya Rodriguez", avatar: "/placeholder.svg" },
-//     description: "Fire fairy who tends to magical gardens, balancing destruction and growth.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 734,
-//     views: 2156,
-//     tags: ["fairy", "fire", "nature", "garden"],
-//     trending: false,
-//     featured: false,
-//     createdAt: "2024-01-12",
-//   },
-//   {
-//     id: 5,
-//     name: "Zephyr Nightwind",
-//     creator: { username: "ShadowArtist", displayName: "Marcus Chen", avatar: "/placeholder.svg" },
-//     description: "Shadow assassin who moves like the wind, protector of the innocent.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 623,
-//     views: 1987,
-//     tags: ["assassin", "shadow", "wind", "protector"],
-//     trending: false,
-//     featured: false,
-//     createdAt: "2024-01-11",
-//   },
-//   {
-//     id: 6,
-//     name: "Crystal Dreamweaver",
-//     creator: { username: "DreamArtist", displayName: "Elena Rodriguez", avatar: "/placeholder.svg" },
-//     description: "Dream guardian who protects sleeping minds from nightmares using crystal magic.",
-//     image: "/placeholder.svg?height=300&width=300",
-//     likes: 945,
-//     views: 3654,
-//     tags: ["dream", "crystal", "guardian", "magic"],
-//     trending: false,
-//     featured: true,
-//     createdAt: "2024-01-10",
-//   },
-// ]
-
-// const mockTrendingCreators = [
-//   {
-//     username: "FantasyMaster",
-//     displayName: "Elena Rodriguez",
-//     avatar: "/placeholder.svg",
-//     followers: 5200,
-//     ocs: 23,
-//     totalLikes: 15420,
-//     specialties: ["Fantasy", "Digital Art", "Character Design"],
-//     isFollowing: false,
-//     featured: true,
-//   },
-//   {
-//     username: "DragonArtist",
-//     displayName: "Marcus Chen",
-//     avatar: "/placeholder.svg",
-//     followers: 4100,
-//     ocs: 18,
-//     totalLikes: 12890,
-//     specialties: ["Dragons", "Mythology", "Concept Art"],
-//     isFollowing: false,
-//     featured: false,
-//   },
-//   {
-//     username: "MysticCreator",
-//     displayName: "Sarah Kim",
-//     avatar: "/placeholder.svg",
-//     followers: 3800,
-//     ocs: 31,
-//     totalLikes: 11750,
-//     specialties: ["Magic", "Fantasy", "Storytelling"],
-//     isFollowing: true,
-//     featured: true,
-//   },
-//   {
-//     username: "ColorMaster",
-//     displayName: "David Park",
-//     avatar: "/placeholder.svg",
-//     followers: 2100,
-//     ocs: 12,
-//     totalLikes: 8920,
-//     specialties: ["Color Theory", "Digital Art", "Teaching"],
-//     isFollowing: false,
-//     featured: false,
-//   },
-// ]
-
-// const mockTags = [
-//   { name: "fantasy", count: 1247, trending: true },
-//   { name: "magic", count: 892, trending: true },
-//   { name: "dragon", count: 756, trending: false },
-//   { name: "elemental", count: 634, trending: true },
-//   { name: "warrior", count: 523, trending: false },
-//   { name: "celestial", count: 445, trending: true },
-//   { name: "gothic", count: 398, trending: false },
-//   { name: "cyberpunk", count: 367, trending: false },
-//   { name: "fairy", count: 334, trending: false },
-//   { name: "demon", count: 298, trending: false },
-// ]
-
-// const mockChallenges = [
-//   {
-//     id: 1,
-//     title: "Elemental Warriors",
-//     description: "Create an OC based on one of the four elements: Fire, Water, Earth, or Air",
-//     participants: 156,
-//     submissions: 89,
-//     daysLeft: 3,
-//     prize: "Featured on homepage",
-//     image: "/placeholder.svg?height=200&width=300",
-//   },
-//   {
-//     id: 2,
-//     title: "Mythical Creatures",
-//     description: "Design a character inspired by mythical creatures from any culture",
-//     participants: 234,
-//     submissions: 167,
-//     daysLeft: 8,
-//     prize: "Custom badge + 1000 points",
-//     image: "/placeholder.svg?height=200&width=300",
-//   },
-//   {
-//     id: 3,
-//     title: "Steampunk Adventures",
-//     description: "Create a steampunk-inspired character with unique gadgets and style",
-//     participants: 98,
-//     submissions: 45,
-//     daysLeft: 12,
-//     prize: "Art supplies package",
-//     image: "/placeholder.svg?height=200&width=300",
-//   },
-// ]
-
-// export default function DiscoverPage() {
- 
-//   const [charactersLoading, setCharactersLoading] = useState(true);
-//   const [characters, setCharacters] = useState([]);
-//   const [viewMode, setViewMode] = useState("grid");
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [sortBy, setSortBy] = useState("recent");
-//   const [filterBy, setFilterBy] = useState("all");  
-//   const [favorites, setFavorites] = useState<string[]>([]);
-
-//   const toggleFavorite = (characterId: string) => {
-//     setFavorites((prev) =>
-//       prev.includes(characterId)
-//         ? prev.filter((id) => id !== characterId)
-//         : [...prev, characterId]
-//     );
-//   };
-
-//   useEffect(() => {
-//     const fetchCharacters = async () => {
-//       try {
-//         const { data, error } = await supabase
-//           .from('characters')
-//           .select('*')
-//           .order('created_at', { ascending: false });
-
-//         if (error) {
-//           console.error("Error fetching characters:", error);
-//           return;
-//         }
-
-//         setCharacters(data || []);
-//       } catch (err) {
-//         console.error("Unexpected error:", err);
-//       } finally {
-//         setCharactersLoading(false);
-//       }
-//     };
-//     fetchCharacters();
-//   }, []);
-
-
-    
-
-//   if (charactersLoading) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-//         <div className="container mx-auto px-4 py-8">
-//           <div className="flex items-center justify-center h-64">
-//             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100">
-
-//       <div className="container mx-auto px-4 py-8">
-//         <div className="flex items-center justify-between mb-8">
-//           <div>
-//             <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Characters</h1>
-//             <p className="text-gray-600">Explore amazing original characters from the community</p>
-//           </div>
-//           <div className="flex items-center gap-2">
-//             <Button
-//               variant={viewMode === "grid" ? "default" : "outline"}
-//               size="sm"
-//               onClick={() => setViewMode("grid")}
-//             >
-//               <Grid className="h-4 w-4" />
-//             </Button>
-//             <Button
-//               variant={viewMode === "list" ? "default" : "outline"}
-//               size="sm"
-//               onClick={() => setViewMode("list")}
-//             >
-//               <List className="h-4 w-4" />
-//             </Button>
-//           </div>
-//         </div>
-
-//         {/* Filters */}
-//         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-//           <div className="relative flex-1">
-//             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-//             <Input
-//               placeholder="Search characters..."
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               className="pl-10"
-//             />
-//           </div>
-//           <Select value={sortBy} onValueChange={setSortBy}>
-//             <SelectTrigger className="w-full sm:w-48">
-//               <SelectValue placeholder="Sort by" />
-//             </SelectTrigger>
-//             <SelectContent>
-//               <SelectItem value="recent">Most Recent</SelectItem>
-//               <SelectItem value="alphabetical">Alphabetical</SelectItem>
-//               <SelectItem value="likes">Most Liked</SelectItem>
-//               <SelectItem value="views">Most Viewed</SelectItem>
-//             </SelectContent>
-//           </Select>
-//           <Select value={filterBy} onValueChange={setFilterBy}>
-//             <SelectTrigger className="w-full sm:w-48">
-//               <SelectValue placeholder="Filter by" />
-//             </SelectTrigger>
-//             <SelectContent>
-//               <SelectItem value="all">All</SelectItem>
-//               <SelectItem value="trending">Trending</SelectItem>
-//               <SelectItem value="popular">Popular</SelectItem>
-//               <SelectItem value="recent">Recent</SelectItem>
-//             </SelectContent>
-//           </Select>
-//         </div>
-
-//         {/* Results */}
-//         <div className="mb-4">
-//           <p className="text-sm text-gray-600">
-//             Showing {characters.length} of {characters.length} characters
-//           </p>
-//         </div>
-
-//         {characters.length === 0 ? (
-//           <Card>
-//             <CardContent className="text-center py-12">
-//               <Sparkles className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-//               <h3 className="text-lg font-semibold text-gray-900 mb-2">No characters found</h3>
-//               <p className="text-gray-600 mb-4">
-//                 {characters.length === 0
-//                   ? "No characters available yet. Be the first to create one!"
-//                   : "Try adjusting your search or filters"}
-//               </p>
-//               {characters.length === 0 && (
-//                 <Link href="/create">
-//                   <Button className="bg-purple-600 hover:bg-purple-700">
-//                     <Sparkles className="h-4 w-4 mr-2" />
-//                     Create First Character
-//                   </Button>
-//                 </Link>
-//               )}
-//             </CardContent>
-//           </Card>
-//         ) : (
-//           <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-//             {characters.map((character) => (
-//               <Card key={character.id} className="hover:shadow-lg transition-shadow">
-//                 <CardContent className={viewMode === "grid" ? "p-6" : "p-4"}>
-//                   <div className={viewMode === "grid" ? "text-center" : "flex items-center gap-4"}>
-//                     <div className={viewMode === "grid" ? "relative mb-4" : "relative"}>
-//                       <div className={`${viewMode === "grid" ? "w-16 h-16 mx-auto" : "w-12 h-12"} bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center text-white font-bold text-xl`}>
-//                         {character.name.charAt(0)}
-//                       </div>
-//                       <Button
-//                         variant="ghost"
-//                         size="sm"
-//                         className="absolute -top-2 -right-2 h-6 w-6 p-0 bg-white shadow-sm hover:bg-red-50"
-//                         onClick={() => toggleFavorite(character.id)}
-//                       >
-//                         <Heart className={`h-3 w-3 ${favorites.includes(character.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`} />
-//                       </Button>
-//                     </div>
-
-//                     <div className={viewMode === "grid" ? "" : "flex-1 min-w-0"}>
-//                       <Link href={`/character/${character.id}`}>
-//                         <h3 className={`font-semibold hover:text-purple-600 transition-colors ${viewMode === "grid" ? "mb-1" : "truncate"}`}>
-//                           {character.name}
-//                         </h3>
-//                       </Link>
-
-//                       {character.shortDescription && (
-//                         <p className={`text-gray-600 text-sm ${viewMode === "grid" ? "mb-3 line-clamp-2" : "truncate"}`}>
-//                           {character.shortDescription}
-//                         </p>
-//                       )}
-
-//                       <div className={`flex ${viewMode === "grid" ? "justify-center" : ""} gap-4 text-sm text-gray-600 mb-3`}>
-//                         <span className="flex items-center gap-1">
-//                           <Heart className="h-3 w-3" />
-//                           {character.likes}
-//                         </span>
-//                         <span className="flex items-center gap-1">
-//                           <Eye className="h-3 w-3" />
-//                           {character.views}
-//                         </span>
-//                       </div>
-
-//                       <div className={`flex flex-wrap gap-1 ${viewMode === "grid" ? "justify-center" : ""}`}>
-//                         {character.tags.slice(0, 3).map((tag, idx) => (
-//                           <Badge key={idx} variant="secondary" className="text-xs">
-//                             #{tag}
-//                           </Badge>
-//                         ))}
-//                         {character.tags.length > 3 && (
-//                           <Badge variant="outline" className="text-xs">
-//                             +{character.tags.length - 3}
-//                           </Badge>
-//                         )}
-//                       </div>
-//                     </div>
-
-//                     {viewMode === "list" && (
-//                       <div className="flex flex-col gap-2">
-//                         <Link href={`/character/${character.id}`}>
-//                           <Button variant="outline" size="sm">
-//                             View Details
+// {filteredOCs.map((oc) => (
+//                     <Card key={oc.id} className="border-purple-200 shadow-lg hover:shadow-xl transition-shadow group">
+//                       <div className="relative">
+//                         <Image
+//                           src={oc.char_img.length > 0 ? oc.char_img[0] : "/placeholder.svg"}
+//                           alt={oc.name}
+//                           width={300}
+//                           height={300}
+//                           className="w-full aspect-square object-cover rounded-t-lg"
+//                         />
+//                         <div className="absolute top-2 left-2 flex gap-1">
+//                           {oc.trending && (
+//                             <Badge className="bg-orange-500 text-white">
+//                               <Fire className="h-3 w-3 mr-1" />
+//                               Trending
+//                             </Badge>
+//                           )}
+//                           {oc.featured && (
+//                             <Badge className="bg-yellow-500 text-yellow-900">
+//                               <Star className="h-3 w-3 mr-1" />
+//                               Featured
+//                             </Badge>
+//                           )}
+//                         </div>
+//                         <div className="absolute top-2 right-2 flex gap-1">
+//                           <Button
+//                             size="sm"
+//                             variant="ghost"
+//                             onClick={() => toggleSave(oc.id)}
+//                             className={`h-8 w-8 p-0 bg-white/80 hover:bg-white ${
+//                               savedOCs.has(oc.id) ? "text-yellow-600" : "text-purple-600"
+//                             }`}
+//                           >
+//                             <Bookmark className={`h-4 w-4 ${savedOCs.has(oc.id) ? "fill-current" : ""}`} />
 //                           </Button>
-//                         </Link>
-//                         <div className="text-xs text-gray-500 text-center">
-//                           By {character.createdBy}
 //                         </div>
 //                       </div>
-//                     )}
-//                   </div>
-//                 </CardContent>
-//               </Card>
-//             ))}
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
+//                       <CardContent className="p-4">
+//                         <div className="mb-3">
+//                           <Link href={`/character/${oc.id}`}>
+//                             <h3 className="font-bold text-purple-900 hover:text-purple-700 transition-colors cursor-pointer mb-1">
+//                               {oc.name}
+//                             </h3>
+//                           </Link>
+//                           {/* <Link href={`/profile/${oc.username}`}>
+//                             <p className="text-sm text-purple-600 hover:text-purple-800 cursor-pointer">
+//                               by {oc.creator.displayName}
+//                             </p>
+//                           </Link> */}
+//                         </div>
+
+//                         <p className="text-sm text-purple-700 mb-3 line-clamp-2">{oc.description}</p>
+
+//                         <div className="flex flex-wrap gap-1 mb-3">
+//                           {oc.tags.slice(0, 3).map((tag, idx) => (
+//                             <Badge key={idx} variant="outline" className="text-xs border-purple-300 text-purple-700">
+//                               #{tag}
+//                             </Badge>
+//                           ))}
+//                         </div>
+
+//                         <div className="flex items-center justify-between">
+//                           <div className="flex items-center gap-3 text-sm text-purple-600">
+//                             <div className="flex items-center gap-1">
+//                               <Heart className="h-4 w-4" />
+//                               {oc.likes_count}
+//                             </div>
+//                             <div className="flex items-center gap-1">
+//                               <Eye className="h-4 w-4" />
+//                               {oc.views_count}
+//                             </div>
+//                           </div>
+//                           <Button
+//                             size="sm"
+//                             variant="ghost"
+//                             onClick={() => toggleLike(oc.id)}
+//                             className={`${
+//                               likedOCs.has(oc.id)
+//                                 ? "text-red-600 hover:text-red-700"
+//                                 : "text-purple-600 hover:text-purple-800"
+//                             }`}
+//                           >
+//                           </Button>
+//                         </div>
+//                       </CardContent>
+//                     </Card>
+//                   ))}

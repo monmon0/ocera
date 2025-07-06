@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X, Upload, Palette, FileText, User, Camera, Sparkles, Save, Eye, Quote, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { uploadToCloudflare } from "@/lib/cloudflare/upload"
+import { uploadToCloudflare, deleteFromCloudflare } from "@/lib/cloudflare/upload"
 import { supabase } from "@/lib/supabase"
 import { toast } from "react-hot-toast"
 import { use } from 'react';
@@ -70,22 +70,11 @@ export default function CreateOCPage(
   const [isLoading, setIsLoading] = useState(false);
 
   const [profileColor, setProfileColor] = useState("");
+  const [ogImages, setOgImages] = useState([]);
 
 // Additional helper functions for better file management
 
-const removeFileAtIndex = (index: number) => {
-  setSelectedFiles(prevFiles => {
-    const updatedFiles = [...prevFiles];
-    updatedFiles.splice(index, 1);
-    return updatedFiles;
-  });
 
-  setPreviewUrls(prevUrls => {
-    const updatedPreviews = [...prevUrls];
-    updatedPreviews.splice(index, 1);
-    return updatedPreviews;
-  });
-};
 
   const [referenceSheet, setReferenceSheet] = useState<File | null>(null);
   const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
@@ -146,38 +135,87 @@ const removeFileAtIndex = (index: number) => {
     reader.readAsDataURL(file);
   };
 
-
   const handleSubmit = async () => {
   if (isLoading) return; // Prevent multiple clicks
   setIsLoading(true);
 
   try {
-    // Start with existing image URLs
-    let updatedImageUrls = [...previewUrls];
+    // Since removeFileAtIndex uses splice, arrays shrink when items are removed
+    // We need to track what was originally there vs what's there now
+    const originalUrls = ogImages || [];
     
-    // Only upload files that are actually new (exist in selectedFiles)
-    for (let i = 0; i < selectedFiles.length; i++) {
+    // Find URLs that were removed (original array is longer than current)
+    const deletionPromises = [];
+    if (originalUrls.length > previewUrls.length) {
+      // Some images were removed - we need to figure out which ones
+      const currentCloudflareUrls = previewUrls.filter(url => 
+        url && url.includes('imagedelivery.net')
+      );
+      const originalCloudflareUrls = originalUrls.filter(url => 
+        url && url.includes('imagedelivery.net')
+      );
+      
+      // Find URLs that exist in original but not in current
+      for (const originalUrl of originalCloudflareUrls) {
+        if (!currentCloudflareUrls.includes(originalUrl)) {
+          deletionPromises.push(deleteFromCloudflare(originalUrl));
+        }
+      }
+    }
+    
+    // Wait for all deletions to complete
+    if (deletionPromises.length > 0) {
+      await Promise.all(deletionPromises);
+    }
+
+    // Build the final image URLs array
+    let updatedImageUrls = [];
+    
+    // Process each position
+    for (let i = 0; i < Math.max(previewUrls.length, selectedFiles.length); i++) {
+      const currentUrl = previewUrls[i];
       const file = selectedFiles[i];
+      
       if (file) {
         // This is a new file that needs to be uploaded
         const uploadedUrl = await uploadToCloudflare(file);
         if (uploadedUrl) {
-          updatedImageUrls[i] = uploadedUrl;
+          // If there was an original Cloudflare URL at this position, delete it
+          if (currentUrl && currentUrl.includes('imagedelivery.net')) {
+            await deleteFromCloudflare(currentUrl);
+          }
+          updatedImageUrls.push(uploadedUrl);
         }
+      } else if (currentUrl && currentUrl.trim() !== '') {
+        // This is an existing URL that wasn't removed or replaced
+        updatedImageUrls.push(currentUrl);
       }
-      // If selectedFiles[i] is null, we keep the existing URL at previewUrls[i]
     }
 
-    // Only upload new reference sheet if a new file was selected
+    // Handle reference sheet deletion and upload
     let updatedReferenceSheetUrl = referencePreviewUrl;
     if (referenceSheet) {
+      // If there was an original reference sheet, delete it
+      if (referencePreviewUrl && referencePreviewUrl.includes('imagedelivery.net')) {
+        await deleteFromCloudflare(referencePreviewUrl);
+      }
       updatedReferenceSheetUrl = await uploadToCloudflare(referenceSheet);
+    } else if (!referencePreviewUrl || referencePreviewUrl === '') {
+      // Reference sheet was removed
+      updatedReferenceSheetUrl = null;
     }
 
-    // Only upload new moodboard if a new file was selected
+    // Handle moodboard deletion and upload
     let updatedMoodboardImageUrl = moodboardPreviewUrl;
     if (moodboardImage) {
+      // If there was an original moodboard, delete it
+      if (moodboardPreviewUrl && moodboardPreviewUrl.includes('imagedelivery.net')) {
+        await deleteFromCloudflare(moodboardPreviewUrl);
+      }
       updatedMoodboardImageUrl = await uploadToCloudflare(moodboardImage);
+    } else if (!moodboardPreviewUrl || moodboardPreviewUrl === '') {
+      // Moodboard was removed
+      updatedMoodboardImageUrl = null;
     }
 
     // Update the character instead of inserting
@@ -275,6 +313,149 @@ const removeFileAtIndex = (index: number) => {
     setIsLoading(false);
   }
 };
+
+
+const removeFileAtIndex = (index: number) => {
+  setSelectedFiles(prevFiles => {
+    const updatedFiles = [...prevFiles];
+    updatedFiles.splice(index, 1);
+    return updatedFiles;
+  });
+
+  setPreviewUrls(prevUrls => {
+    const updatedPreviews = [...prevUrls];
+    updatedPreviews.splice(index, 1);
+    return updatedPreviews;
+  });
+};
+//   const handleSubmit = async () => {
+//   if (isLoading) return; // Prevent multiple clicks
+//   setIsLoading(true);
+
+//   try {
+//     // Start with existing image URLs
+//     let updatedImageUrls = [...previewUrls];
+    
+//     // Only upload files that are actually new (exist in selectedFiles)
+//     for (let i = 0; i < selectedFiles.length; i++) {
+//       const file = selectedFiles[i];
+//       if (file) {
+//         // This is a new file that needs to be uploaded
+//         const uploadedUrl = await uploadToCloudflare(file);
+//         if (uploadedUrl) {
+//           updatedImageUrls[i] = uploadedUrl;
+//         }
+//       }
+//       // If selectedFiles[i] is null, we keep the existing URL at previewUrls[i]
+//     }
+
+//     // Only upload new reference sheet if a new file was selected
+//     let updatedReferenceSheetUrl = referencePreviewUrl;
+//     if (referenceSheet) {
+//       updatedReferenceSheetUrl = await uploadToCloudflare(referenceSheet);
+//     }
+
+//     // Only upload new moodboard if a new file was selected
+//     let updatedMoodboardImageUrl = moodboardPreviewUrl;
+//     if (moodboardImage) {
+//       updatedMoodboardImageUrl = await uploadToCloudflare(moodboardImage);
+//     }
+
+//     // Update the character instead of inserting
+//     const { data, error } = await supabase
+//       .from("characters")
+//       .update({
+//         name: characterName,
+//         quote,
+//         description: fullDescription,
+//         short_description: shortDescription,
+//         age,
+//         species,
+//         occupation,
+//         location,
+//         height,
+//         personality_traits: personalityTraits,
+//         abilities,
+//         interests,
+//         dislikes,
+//         tags,
+//         color_palette: colorPalette,
+//         char_img: updatedImageUrls,
+//         moodboard: updatedMoodboardImageUrl,
+//         ref_sheet: updatedReferenceSheetUrl,
+//         profile_color: profileColor,
+//       })
+//       .eq("id", id) // Use the character ID from params
+//       .select(); // Get the updated data back
+
+//     if (error) {
+//       console.error("Error updating character:", error);
+//       toast.error("Failed to update character. Please try again.", {
+//         duration: 5000,
+//         style: {
+//           background: '#EF4444',
+//           color: 'white',
+//           borderRadius: '12px',
+//           padding: '16px',
+//         },
+//         icon: '❌',
+//       });
+//     } else {
+//       const updatedCharacter = data[0];
+//       console.log("Character updated:", updatedCharacter);
+      
+//       // Success toast with link to view character
+//       toast.success(
+//         <div className="flex flex-col gap-2">
+//           <div className="font-medium">Character updated successfully!</div>
+//           <button
+//             onClick={() => {
+//               // Navigate to character page
+//               window.location.href = `/character/${id}`;
+//               // Or if using React Router: navigate(`/character/${id}`);
+//             }}
+//             className="text-white hover:text-blue-800 underline text-sm font-medium transition-colors"
+//           >
+//             View {characterName} →
+//           </button>
+//         </div>,
+//         {
+//           duration: 6000,
+//           style: {
+//             background: '#10B981',
+//             color: 'white',
+//             borderRadius: '12px',
+//             padding: '16px',
+//             minWidth: '300px',
+//           },
+//           icon: '✨',
+//         }
+//       );
+      
+//       // Don't reset form after successful edit - keep the data
+//       setShowPreview(false); // Just close preview dialog
+      
+//       // Optionally redirect to character view page
+//       setTimeout(() => {
+//         window.location.href = `/character/${id}`;
+//       }, 2000);
+//     }
+//   } catch (err) {
+//     console.error("Unexpected error:", err);
+//     toast.error("An unexpected error occurred. Please try again.", {
+//       duration: 5000,
+//       style: {
+//         background: '#EF4444',
+//         color: 'white',
+//         borderRadius: '12px',
+//         padding: '16px',
+//       },
+//       icon: '❌',
+//     });
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
 
 // Updated handleFileInput to work with the new logic
 const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -375,6 +556,7 @@ const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) 
       // Handle image URLs (char_img is likely an array of URLs)
       if (Array.isArray(data.char_img) && data.char_img.length > 0) {
         setPreviewUrls(data.char_img);
+        setOgImages(data.char_img);
         // Note: selectedFiles can't be set from URLs as they're File objects
         // You might need to handle this differently if you need to edit images
       }
